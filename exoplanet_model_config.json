@@ -1,0 +1,121 @@
+{
+  "model_name": "Hybrid CNN + Bidirectional LSTM Exoplanet Detector",
+  "description": "Modelo híbrido otimizado para detecção de exoplanetas usando curvas de luz das missões Kepler, K2 e TESS",
+  "architecture": {
+    "input_branches": {
+      "global_view": {
+        "shape": [
+          2001,
+          1
+        ],
+        "description": "Curva de luz completa normalizada"
+      },
+      "local_view": {
+        "shape": [
+          201,
+          1
+        ],
+        "description": "Janela centrada no possível trânsito"
+      },
+      "auxiliary_features": {
+        "shape": [
+          10
+        ],
+        "description": "Parâmetros estelares (Teff, logg, raio, etc.)"
+      }
+    },
+    "layers": {
+      "conv1d_global": {
+        "filters": [
+          16,
+          32,
+          64
+        ],
+        "kernel_sizes": [
+          5,
+          5,
+          5
+        ]
+      },
+      "conv1d_local": {
+        "filters": [
+          16,
+          32,
+          64
+        ],
+        "kernel_sizes": [
+          3,
+          3,
+          3
+        ]
+      },
+      "lstm": {
+        "units": [
+          50,
+          50
+        ],
+        "bidirectional": true
+      },
+      "dense": {
+        "units": [
+          64,
+          32,
+          128,
+          64
+        ],
+        "dropout": [
+          0.3,
+          0.0,
+          0.4,
+          0.3
+        ]
+      }
+    },
+    "output": {
+      "classes": 3,
+      "activation": "softmax",
+      "labels": [
+        "CONFIRMED",
+        "CANDIDATE",
+        "FALSE POSITIVE"
+      ]
+    }
+  },
+  "training": {
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "loss_function": "categorical_crossentropy",
+    "batch_size": 32,
+    "epochs": 100,
+    "validation_split": 0.2,
+    "callbacks": [
+      "EarlyStopping",
+      "ReduceLROnPlateau"
+    ]
+  },
+  "preprocessing": {
+    "normalization": "Robust (median + MAD)",
+    "outlier_clipping": "5-sigma",
+    "sequence_length": 2001,
+    "local_window": 201,
+    "data_augmentation": [
+      "Gaussian noise",
+      "Time reflection",
+      "Temporal shift"
+    ]
+  },
+  "evaluation_metrics": [
+    "Accuracy",
+    "Precision",
+    "Recall",
+    "F1-Score",
+    "ROC-AUC",
+    "Confusion Matrix",
+    "False Positive Rate"
+  ],
+  "datasets": {
+    "kepler": "NASA Kepler Cumulative KOI Table",
+    "k2": "K2 Planets and Candidates",
+    "tess": "TESS Objects of Interest (TOI)"
+  }
+}
