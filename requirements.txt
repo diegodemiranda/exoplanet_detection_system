@@ -16,24 +16,28 @@ tensorflow==2.20.0
 # Processamento de dados astronômicos
 astropy==6.0.0
 lightkurve==2.4.2
-astroquery==0.4.7  # Para acessar bases de dados astronômicas
+astroquery==0.4.7
 
 # Visualização e análise
 matplotlib==3.8.3
 seaborn==0.13.2
 plotly==5.18.0
-bokeh==3.3.4  # Para visualizações interativas
+bokeh==3.3.4
+
+# UI com Dash
+dash==2.17.1
+dash-bootstrap-components==1.6.0
 
 # Performance e otimização
-numba==0.59.0  # JIT compilation para NumPy
-cython==3.0.8  # Compilação de código Python crítico
-redis==5.0.1  # Cache distribuído (opcional)
-python-memcached==1.59  # Cache alternativo (fix: replaced 'memcached' with 'python-memcached')
+numba==0.59.0
+cython==3.0.8
+redis==5.0.1
+python-memcached==1.59
 
 # Processamento assíncrono e concorrência
-asyncio-mqtt==0.16.1  # Para messaging assíncrono
-celery==5.3.6  # Para tarefas em background
-aioredis==2.0.1  # Redis assíncrono
+asyncio-mqtt==0.16.1
+celery==5.3.6
+aioredis==2.0.1
 
 # Autenticação e segurança
 python-jose[cryptography]==3.3.0
@@ -44,18 +48,18 @@ cryptography==42.0.2
 # Utilitários web
 aiofiles==23.2.1
 jinja2==3.1.3
-python-dotenv==1.0.1  # Para variáveis de ambiente
+python-dotenv==1.0.1
 
 # Monitoring e logging
-prometheus-client==0.19.0  # Métricas para Prometheus
-structlog==24.1.0  # Logging estruturado
-sentry-sdk[fastapi]==1.40.0  # Error tracking
+prometheus-client==0.19.0
+structlog==24.1.0
+sentry-sdk[fastapi]==1.40.0
 
 # Testes e qualidade de código
-black==24.1.1  # Code formatting
-flake8==7.0.0  # Linting
-mypy==1.8.0  # Type checking
-pre-commit==3.6.0  # Git hooks
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0
+pre-commit==3.6.0
 
 # Documentação
 mkdocs==1.5.3
@@ -66,14 +70,14 @@ gunicorn==21.2.0
 docker==7.0.0
 
 # Análise de dados específica para astronomia
-george==0.4.0  # Gaussian Process regression
-emcee==3.1.4  # MCMC sampling
-corner==2.2.2  # Corner plots para análise bayesiana
-batman-package==2.4.9  # Transit modeling
+george==0.4.0
+emcee==3.1.4
+corner==2.2.2
+batman-package==2.4.9
 
-# Otimizações adicionais
-orjson==3.9.15  # JSON parser mais rápido
-uvloop==0.19.0  # Event loop otimizado (Unix apenas)
-httpx==0.26.0  # Cliente HTTP assíncrono
-requests==2.32.3  # Cliente HTTP síncrono para ingestão NASA
-cachetools==5.3.2  # Utilitários de cache
+# Otimizações
+orjson==3.9.15
+uvloop==0.19.0
+httpx==0.26.0
+requests==2.32.3
+cachetools==5.3.2
