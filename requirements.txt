@@ -79,5 +79,5 @@ batman-package==2.4.9
 orjson==3.9.15
 uvloop==0.19.0
 httpx==0.26.0
-requests==2.32.3
+requests==2.32.4
 cachetools==5.3.2
