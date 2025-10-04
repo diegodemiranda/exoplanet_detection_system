@@ -1,0 +1,82 @@
+# Framework principal
+fastapi==0.110.0
+uvicorn[standard]==0.27.0
+pydantic==2.6.1
+pydantic-settings==2.1.0
+
+# Processamento de dados científicos
+numpy==1.26.4
+pandas==2.2.0
+scipy==1.12.0
+scikit-learn==1.4.0
+
+# Machine Learning e Deep Learning
+tensorflow==2.20.0
+
+# Processamento de dados astronômicos
+astropy==6.0.0
+lightkurve==2.4.2
+astroquery==0.4.7  # Para acessar bases de dados astronômicas
+
+# Visualização e análise
+matplotlib==3.8.3
+seaborn==0.13.2
+plotly==5.18.0
+bokeh==3.3.4  # Para visualizações interativas
+
+# Performance e otimização
+numba==0.59.0  # JIT compilation para NumPy
+cython==3.0.8  # Compilação de código Python crítico
+redis==5.0.1  # Cache distribuído (opcional)
+python-memcached==1.59  # Cache alternativo (fix: replaced 'memcached' with 'python-memcached')
+
+# Processamento assíncrono e concorrência
+asyncio-mqtt==0.16.1  # Para messaging assíncrono
+celery==5.3.6  # Para tarefas em background
+aioredis==2.0.1  # Redis assíncrono
+
+# Autenticação e segurança
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+cryptography==42.0.2
+
+# Utilitários web
+aiofiles==23.2.1
+jinja2==3.1.3
+python-dotenv==1.0.1  # Para variáveis de ambiente
+
+# Monitoring e logging
+prometheus-client==0.19.0  # Métricas para Prometheus
+structlog==24.1.0  # Logging estruturado
+sentry-sdk[fastapi]==1.40.0  # Error tracking
+
+# Testes e qualidade de código
+pytest==8.0.0
+pytest-asyncio==0.23.5
+pytest-cov==4.0.0
+black==24.1.1  # Code formatting
+flake8==7.0.0  # Linting
+mypy==1.8.0  # Type checking
+pre-commit==3.6.0  # Git hooks
+
+# Documentação
+mkdocs==1.5.3
+mkdocs-material==9.5.6
+
+# Deployment e containerização
+gunicorn==21.2.0
+docker==7.0.0
+
+# Análise de dados específica para astronomia
+george==0.4.0  # Gaussian Process regression
+emcee==3.1.4  # MCMC sampling
+corner==2.2.2  # Corner plots para análise bayesiana
+batman-package==2.4.9  # Transit modeling
+
+# Otimizações adicionais
+orjson==3.9.15  # JSON parser mais rápido
+uvloop==0.19.0  # Event loop otimizado (Unix apenas)
+httpx==0.26.0  # Cliente HTTP assíncrono
+requests==2.32.3  # Cliente HTTP síncrono para ingestão NASA
+cachetools==5.3.2  # Utilitários de cache
