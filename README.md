@@ -44,7 +44,7 @@ This repository contains a production-grade, end-to-end exoplanet detection plat
 - A FastAPI-powered inference API with strict validation and structured error handling.
 - A hybrid CNN + BiLSTM model implementation in TensorFlow/Keras.
 - A fully instrumented runtime with Prometheus metrics and Grafana dashboards.
-- A responsive frontend SPA (served by the API).
+- A modern, accessible analytics UI built with Dash by Plotly and mounted at `/ui/`.
 - A hardened reverse proxy (Nginx) with HTTPS support.
 - A Celery worker for background/batch tasks leveraging Redis.
 
@@ -59,7 +59,7 @@ Core components:
 - Background Worker: Celery tasks (single/batch prediction, warmup, cache maintenance, metrics collection).
 - Reverse Proxy: Nginx with TLS (dev certs via Makefile) and HTTP→HTTPS redirect.
 - Monitoring: Prometheus (scrape /metrics) and Grafana (pre-provisioned datasource and dashboard).
-- Frontend: single-page app served at `/` with assets `/style.css` and `/app.js` from `frontend/`.
+- Frontend: Dash app mounted under `/ui/` and reachable from `/` via redirect.
 
 Data flow (inference):
 1) Client submits a candidate with light-curve flux and mission → API validates via Pydantic V2.
@@ -93,9 +93,7 @@ Strict validation blocks malformed inputs early, returning detailed error codes 
 ---
 
 ## API Endpoints and Contracts
-- GET `/` → serves frontend SPA (`frontend/index.html`).
-- GET `/style.css` → serves CSS from `frontend/style.css`.
-- GET `/app.js` → serves JS from `frontend/app.js`.
+- GET `/` → redirects to the new Dash UI at `/ui/`.
 - GET `/health` → liveness/readiness; 200 healthy or 503 if model not loaded.
 - GET `/metrics` → Prometheus exposition format (latency histograms, counters, uptime).
 - GET `/metrics/json` → JSON metrics (API, model, caches, system info).
@@ -103,6 +101,8 @@ Strict validation blocks malformed inputs early, returning detailed error codes 
 - GET `/cache/stats` → cache stats snapshots.
 - DELETE `/cache/clear` → clear prediction and model caches.
 - GET `/model/info` → model loaded status, weights path, input shapes, class labels.
+- GET `/catalog/search` → search catalogs with filters and pagination (missions: Kepler/TESS/K2; status filters; returns normalized table items).
+- GET `/lightcurve` → retrieve light curve from local cache (and optional remote download) with decimation and synthetic time axis.
 - POST `/predict` → single prediction (Pydantic-validated input, structured output).
 - POST `/predict/batch` → batch prediction with aggregated stats.
 
@@ -117,6 +117,7 @@ Error codes:
 - LRU eviction under pressure.
 - Stats: size, hit rate, access counters, entry ages.
 Prediction responses are cached using a strong key derived from candidate content (flux hash + mission + target).
+A small `model_cache` is also used for catalogs and light curves.
 
 ---
 
@@ -140,20 +141,20 @@ Environment variables you’ll commonly set:
 - `MODEL_FULL_PATH=/app/models/exoplanet_model.keras`
 - `LOG_LEVEL=INFO`
 - `CACHE_TTL=3600`
-- `REDIS_URL=redis://redis:6379/0`
+- `EXO_API_BASE_URL` (optional; when the UI is served behind a distinct domain)
 
 ---
 
 ## Containerization and Deployment
 - Dockerfile: multi-stage build (builder venv + slim runtime), BLAS/LAPACK, curl for healthcheck, non-root user, Gunicorn + Uvicorn workers.
 - docker-compose.yml: full stack up by default:
-  - exoplanet-api (FastAPI + SPA)
+  - exoplanet-api (FastAPI + Dash UI)
   - redis (broker/cache)
   - prometheus (scrapes `/metrics`)
   - grafana (provisioned datasource and dashboards)
   - nginx (HTTPS reverse proxy; 80→443 redirect)
   - worker (Celery tasks; calls API)
-- Volumes: logs/, models/, cache/, frontend/ mounted into the API container (frontend as read-only for live HTML/CSS/JS edits without rebuild).
+- Volumes: logs/, models/, cache/ mounted into the API container.
 - Nginx TLS:
   - Generate dev certs: `make cert-dev` (creates `nginx/ssl/cert.pem` and `nginx/ssl/key.pem`).
   - Replace with production certificates in `nginx/ssl/` for real deployments.
@@ -186,6 +187,7 @@ Environment variables you’ll commonly set:
 ---
 
 ## Code Quality and Tooling
+- Tests: `pytest`, `pytest-asyncio`, `pytest-cov`.
 - Linting/Formatting/Types: `flake8`, `black`, `mypy`.
 - Pre-commit hooks recommended.
 - CI-friendly commands can be added as Make targets.
@@ -196,33 +198,44 @@ Environment variables you’ll commonly set:
 - FastAPI, Uvicorn, Pydantic V2: modern, fast, typed API development.
 - NumPy, SciPy, scikit-learn: scientific stack for preprocessing and features.
 - TensorFlow/Keras: CNN + BiLSTM hybrid model inference.
+- Dash by Plotly: interactive analytics UI with minimal JS.
 - prometheus-client: first-class runtime metrics.
 - Celery + Redis: background jobs, batch orchestration.
 - Nginx: TLS termination, reverse proxying.
 - Grafana + Prometheus: monitoring and dashboards.
 
-(Note: PyTorch and Transformers were intentionally removed from requirements to keep the runtime focused on the Keras model currently implemented.)
-
 ---
 
 ## Frontend (Web UI)
-- Files served from `frontend/` only (no root duplicates).
-  - `/` → `frontend/index.html`
-  - `/style.css` → `frontend/style.css`
-  - `/app.js` → `frontend/app.js`
-- You can live-edit `frontend/` files; the API will serve them without container rebuild.
+The new UI is built with Dash and mounted under `/ui/` (the root `/` redirects there):
+- Search bar + Advanced filters (mission, status) with pagination and sortable columns.
+- Interactive Light Curve Viewer with zoom, pan, tooltips, normalization, simple model overlay, and optional period folding.
+- Details panel with key parameters and live “Classificar com IA” that calls the `/predict` endpoint.
+- High-contrast palette, semantic layout (header/main/footer), keyboard focus styles, and screen-reader alt text for charts.
+
+Files:
+- `dashboard/app.py` (Dash app factory)
+- `dashboard/assets/style.css` (accessible, responsive styling)
 
 ---
 
 ## How to Run
 ### Development (local Python)
 ```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
 pip install -r requirements.txt
 # Optional: create a .env with overrides (MODEL_FULL_PATH, LOG_LEVEL, etc.)
 python main.py
 ```
-- UI: http://localhost:8000/
+- UI: http://localhost:8000/ui/
 - API docs: http://localhost:8000/docs
+
+Tip: if you only want UI deps for a quick smoke test, install these first:
+```bash
+pip install fastapi uvicorn dash dash-bootstrap-components plotly httpx
+```
 
 ### Full Stack with Docker
 ```bash
@@ -265,23 +278,16 @@ DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up -d
 ---
 
 ## Troubleshooting
-- “Could not open requirements file … /tmp/requirements.txt”: the Dockerfile now installs from `/app/requirements.txt`; rebuild without cache:
-  ```bash
-  docker compose down -v
-  docker builder prune -f
-  docker compose build --no-cache exoplanet-api worker
-  docker compose up -d
-  ```
 - `/health` returns 503: model file missing or path misconfigured → place `exoplanet_model.keras` under `./models` or set `MODEL_FULL_PATH`.
-- Nginx TLS errors: run `make cert-dev` (dev) or place real certs in `nginx/ssl/`.
-- Port 8000 busy: stop local processes (macOS: `lsof -nP -iTCP:8000 -sTCP:LISTEN`).
+- Dash UI not loading assets: ensure you are visiting `/ui/` and that the app is running on the same origin; set `EXO_API_BASE_URL` if using a separate domain.
 - Prometheus not scraping: ensure `exoplanet-api` is up, and `/metrics` returns data; check `monitoring/prometheus.yml` target.
+- Port 8000 busy: stop local processes (macOS: `lsof -nP -iTCP:8000 -sTCP:LISTEN`).
 
 ---
 
 ## Acknowledgements and License
 - NASA Kepler/K2/TESS communities and datasets
-- FastAPI, Pydantic, NumPy/SciPy, TensorFlow/Keras
+- FastAPI, Pydantic, NumPy/SciPy, TensorFlow/Keras, Dash/Plotly
 - Prometheus and Grafana projects
 
 License: MIT (see LICENSE).
