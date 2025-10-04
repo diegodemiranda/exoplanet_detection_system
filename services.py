@@ -287,7 +287,7 @@ class OptimizedExoplanetDetectorService(IExoplanetDetector):
                 probabilities=probabilities,
                 processing_time=metrics.total_time,
                 timestamp=datetime.now(),
-                model_version="1.0.0",
+                version="1.0.0",
                 features_used=list(features.keys()),
                 quality_score=metrics.data_quality_score
             )
