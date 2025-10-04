@@ -1,8 +1,8 @@
 """
 Validadores de dados otimizados com Pydantic V2
 """
-from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, validator, root_validator
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 import numpy as np
 from datetime import datetime
 
@@ -12,11 +12,14 @@ from exceptions import InvalidDataError
 
 class OptimizedLightCurveData(BaseModel):
     """Modelo otimizado para dados de curva de luz com validações avançadas"""
-    flux: List[float] = Field(..., description="Dados de fluxo normalizado", min_items=100)
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
+    flux: List[float] = Field(..., description="Dados de fluxo normalizado", min_length=100)
     time: Optional[List[float]] = Field(None, description="Timestamps correspondentes")
     mission: str = Field("Kepler", description="Missão espacial")
 
-    @validator('flux')
+    @field_validator('flux')
+    @classmethod
     def validate_flux(cls, v):
         """Validação avançada dos dados de fluxo"""
         if len(v) > 10000:
@@ -35,7 +38,8 @@ class OptimizedLightCurveData(BaseModel):
 
         return v
 
-    @validator('mission')
+    @field_validator('mission')
+    @classmethod
     def validate_mission(cls, v):
         """Validação da missão"""
         valid_missions = ["Kepler", "K2", "TESS"]
@@ -47,42 +51,39 @@ class OptimizedLightCurveData(BaseModel):
             )
         return v
 
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
-
 
 class OptimizedStellarParameters(BaseModel):
     """Parâmetros estelares com validações físicas"""
+    model_config = ConfigDict(extra="forbid")
+
     teff: Optional[float] = Field(None, ge=2000, le=50000, description="Temperatura efetiva (K)")
     logg: Optional[float] = Field(None, ge=0, le=6, description="log g (cm/s²)")
     feh: Optional[float] = Field(None, ge=-3, le=1, description="Metalicidade [Fe/H]")
     radius: Optional[float] = Field(None, gt=0, le=100, description="Raio estelar (R_sun)")
     mass: Optional[float] = Field(None, gt=0, le=50, description="Massa estelar (M_sun)")
 
-    class Config:
-        extra = "forbid"
-
 
 class OptimizedTransitParameters(BaseModel):
     """Parâmetros de trânsito com validações físicas"""
+    model_config = ConfigDict(extra="forbid")
+
     period: Optional[float] = Field(None, gt=0, le=10000, description="Período orbital (dias)")
     epoch: Optional[float] = Field(None, description="Época do trânsito (BJD)")
     duration: Optional[float] = Field(None, gt=0, le=24, description="Duração do trânsito (horas)")
     depth: Optional[float] = Field(None, gt=0, le=1, description="Profundidade do trânsito (fração)")
 
-    class Config:
-        extra = "forbid"
-
 
 class OptimizedExoplanetCandidate(BaseModel):
     """Modelo otimizado para candidato a exoplaneta"""
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
     target_name: str = Field(..., min_length=1, max_length=100, description="Nome do alvo")
     light_curve: OptimizedLightCurveData
     stellar_params: Optional[OptimizedStellarParameters] = None
     transit_params: Optional[OptimizedTransitParameters] = None
 
-    @validator('target_name')
+    @field_validator('target_name')
+    @classmethod
     def validate_target_name(cls, v):
         """Validação do nome do alvo"""
         cleaned = v.strip()
@@ -90,24 +91,23 @@ class OptimizedExoplanetCandidate(BaseModel):
             raise InvalidDataError(field="target_name", expected="nome não vazio")
         return cleaned
 
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
-
 
 class OptimizedPredictionResult(BaseModel):
     """Resultado otimizado de predição com mais metadados"""
+    model_config = ConfigDict(extra="forbid")
+
     target_name: str
     prediction: str
     confidence: float = Field(..., ge=0, le=1)
     probabilities: Dict[str, float]
     processing_time: float = Field(..., ge=0)
     timestamp: datetime
-    model_version: str = Field(default="1.0.0")
+    version: str = Field(default="1.0.0")
     features_used: List[str] = Field(default_factory=list)
     quality_score: Optional[float] = Field(None, ge=0, le=1)
 
-    @validator('prediction')
+    @field_validator('prediction')
+    @classmethod
     def validate_prediction(cls, v):
         """Validação da predição"""
         valid_predictions = ["CONFIRMED", "CANDIDATE", "FALSE_POSITIVE"]
@@ -119,25 +119,20 @@ class OptimizedPredictionResult(BaseModel):
             )
         return v
 
-    class Config:
-        extra = "forbid"
-
 
 class BatchPredictionRequest(BaseModel):
     """Requisição para predição em lote"""
-    candidates: List[OptimizedExoplanetCandidate] = Field(..., min_items=1, max_items=32)
-    options: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="forbid")
 
-    class Config:
-        extra = "forbid"
+    candidates: List[OptimizedExoplanetCandidate] = Field(..., min_length=1, max_length=32)
+    options: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 
 class BatchPredictionResponse(BaseModel):
     """Resposta para predição em lote"""
+    model_config = ConfigDict(extra="forbid")
+
     results: List[OptimizedPredictionResult]
     total_processing_time: float
     batch_stats: Dict[str, Any]
     timestamp: datetime
-
-    class Config:
-        extra = "forbid"
