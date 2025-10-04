@@ -1,0 +1,12 @@
+{
+  "keras_model": "models/exoplanet_model.keras",
+  "classes": [
+    "CONFIRMED",
+    "CANDIDATE",
+    "FALSE_POSITIVE"
+  ],
+  "sequence_length": 2001,
+  "local_view_length": 201,
+  "mode": "synthetic",
+  "missions": null
+}
