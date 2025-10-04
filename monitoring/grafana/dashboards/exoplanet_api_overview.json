@@ -1,0 +1,71 @@
+{
+  "id": null,
+  "uid": "exoplanet-api-overview",
+  "title": "Exoplanet API Overview",
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total HTTP Requests",
+      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 4},
+      "targets": [{
+        "expr": "sum(increase(http_requests_total[5m]))",
+        "legendFormat": "requests"
+      }]
+    },
+    {
+      "type": "stat",
+      "title": "HTTP Errors (5m)",
+      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 4},
+      "targets": [{
+        "expr": "sum(increase(http_errors_total[5m]))",
+        "legendFormat": "errors"
+      }]
+    },
+    {
+      "type": "stat",
+      "title": "Predictions (5m)",
+      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 4},
+      "targets": [{
+        "expr": "sum(increase(predictions_total[5m]))",
+        "legendFormat": "predictions"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Request Duration (p95)",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+        "legendFormat": "p95"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Prediction Duration (avg)",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "sum(rate(prediction_duration_seconds_sum[5m])) / sum(rate(prediction_duration_seconds_count[5m]))",
+        "legendFormat": "avg"
+      }]
+    },
+    {
+      "type": "table",
+      "title": "Requests by Path (5m)",
+      "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
+      "transformations": [
+        {"id": "labelsToFields", "options": {"mode": "columns"}}
+      ],
+      "targets": [{
+        "expr": "sum by (path, status) (increase(http_requests_total[5m]))",
+        "legendFormat": "{{path}} {{status}}"
+      }]
+    }
+  ],
+  "templating": {"list": []},
+  "time": {"from": "now-15m", "to": "now"}
+}
+
