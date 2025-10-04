@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 import asyncio
 
-# Imports locais otimizados
+# Optimized local imports
 from config import settings
 from models import (
     OptimizedExoplanetCandidate,
@@ -28,9 +28,9 @@ from exceptions import (
 )
 from cache import prediction_cache, model_cache
 
-# Limpar métricas existentes do registro para evitar duplicação
+# Clear existing metrics from registry to avoid duplication
 def clear_prometheus_registry():
-    """Remove todas as métricas do registro para evitar duplicação"""
+    """Remove all metrics from the registry to avoid duplication"""
     collectors = list(REGISTRY._collector_to_names.keys())
     for collector in collectors:
         try:
@@ -38,10 +38,10 @@ def clear_prometheus_registry():
         except Exception:
             pass
 
-# Limpar registro antes de criar métricas
+# Clear registry before creating metrics
 clear_prometheus_registry()
 
-# Definições de métricas Prometheus
+# Prometheus metrics definitions
 REQUEST_COUNT = Counter(
     'http_requests_total', 'Total HTTP requests', ['method', 'path', 'status']
 )
@@ -59,7 +59,7 @@ PREDICTION_LATENCY = Histogram(
 )
 UPTIME_SECONDS = Gauge('app_uptime_seconds', 'Application uptime in seconds')
 
-# Configuração de logging otimizada
+# Optimized logging configuration
 logging.basicConfig(
     level=getattr(logging, settings.log_level),
     format=settings.log_format,
@@ -70,37 +70,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Container de serviços (Dependency Injection)
+# Service container (Dependency Injection)
 class ServiceContainer:
-    """Container para injeção de dependências"""
+    """Container for dependency injection"""
 
     def __init__(self):
         self._services = {}
 
     def register(self, name: str, service: Any):
-        """Registra um serviço"""
+        """Register a service"""
         self._services[name] = service
 
     def get(self, name: str):
-        """Obtém um serviço"""
+        """Get a registered service"""
         if name not in self._services:
             raise ValueError(f"Serviço '{name}' não registrado")
         return self._services[name]
 
-# Instância global do container
+# Global container instance
 container = ServiceContainer()
 
 # Dependency functions
 async def get_detector_service() -> OptimizedExoplanetDetectorService:
-    """Dependência para obter o serviço de detecção"""
+    """Dependency to obtain the detector service"""
     try:
         return container.get("detector_service")
     except ValueError:
         raise ModelNotLoadedError()
 
-# Middleware personalizado para métricas
+# Custom middleware for metrics
 class MetricsMiddleware:
-    """Middleware para coleta de métricas"""
+    """Middleware for metrics collection"""
 
     def __init__(self, app: FastAPI):
         self.app = app
@@ -125,42 +125,42 @@ class MetricsMiddleware:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Gerencia o ciclo de vida da aplicação de forma otimizada"""
+    """Manage the application's lifecycle in an optimized way"""
     # Startup
-    logger.info("🚀 Inicializando Exoplanet Detection API...")
+    logger.info("🚀 Initializing Exoplanet Detection API...")
     cleanup_task = None
 
     try:
-        # Inicializar serviços
+        # Initialize services
         detector_service = OptimizedExoplanetDetectorService()
         container.register("detector_service", detector_service)
 
-        # Task de limpeza de cache em background
+        # Background cache cleanup task
         async def cleanup_caches():
             while True:
-                await asyncio.sleep(3600)  # A cada hora
+                await asyncio.sleep(3600)  # Every hour
                 await prediction_cache.cleanup_expired()
                 await model_cache.cleanup_expired()
-                logger.info("Cache cleanup executado")
+                logger.info("Cache cleanup executed")
 
         cleanup_task = asyncio.create_task(cleanup_caches())
 
-        logger.info("✅ Serviços inicializados com sucesso!")
+        logger.info("✅ Services initialized successfully!")
         yield
 
     except Exception as e:
-        logger.error(f"❌ Erro na inicialização: {e}")
+        logger.error(f"❌ Startup error: {e}")
         raise
     finally:
         # Shutdown
-        logger.info("🔄 Finalizando aplicação...")
+        logger.info("🔄 Shutting down application...")
         if cleanup_task:
             cleanup_task.cancel()
         await prediction_cache.clear()
         await model_cache.clear()
-        logger.info("✅ Aplicação finalizada")
+        logger.info("✅ Application finalized")
 
-# Criar aplicação FastAPI otimizada
+# Create optimized FastAPI application
 app = FastAPI(
     title=settings.api_title,
     description=settings.api_description,
@@ -171,7 +171,7 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# Configurar CORS de forma segura
+# Configure CORS securely
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -180,12 +180,12 @@ app.add_middleware(
     allow_headers=settings.cors_headers,
 )
 
-# Adicionar middleware de métricas
+# Add metrics middleware
 metrics_middleware = MetricsMiddleware(app)
 
 @app.middleware("http")
 async def _metrics_middleware(request: Request, call_next):
-    """Middleware HTTP para coletar métricas sem quebrar a pipeline do FastAPI"""
+    """HTTP middleware to collect metrics without breaking FastAPI pipeline"""
     metrics_middleware.request_count += 1
     start = datetime.now()
     try:
@@ -205,10 +205,10 @@ async def _metrics_middleware(request: Request, call_next):
         REQUEST_COUNT.labels(request.method, request.url.path, '500').inc()
         raise
 
-# Handler de exceções personalizado
+# Custom exception handler
 @app.exception_handler(ExoplanetDetectionError)
 async def detection_exception_handler(request, exc: ExoplanetDetectionError):
-    """Handler para exceções de detecção"""
+    """Handler for exoplanet detection exceptions"""
     logger.error(f"Erro de detecção: {exc.message} - {exc.details}")
     return JSONResponse(
         status_code=400,
@@ -221,16 +221,16 @@ async def detection_exception_handler(request, exc: ExoplanetDetectionError):
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc: HTTPException):
-    """Handler para exceções HTTP"""
+    """Handler for HTTP exceptions"""
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": "HTTP_ERROR", "message": exc.detail}
     )
 
-# Endpoints otimizados
+# Optimized endpoints
 @app.get("/", response_class=HTMLResponse, tags=["Interface"])
 async def root():
-    """Página inicial servindo a interface SPA"""
+    """Home page serving the SPA interface"""
     return FileResponse("frontend/index.html")
 
 @app.get("/style.css", include_in_schema=False)
@@ -241,9 +241,9 @@ async def serve_css():
 async def serve_js():
     return FileResponse("frontend/app.js", media_type="application/javascript")
 
-@app.get("/health", tags=["Monitoramento"])
+@app.get("/health", tags=["Monitoring"])
 async def health_check():
-    """Verificação de saúde otimizada"""
+    """Optimized health check"""
     try:
         detector = await get_detector_service()
         return {
@@ -259,20 +259,21 @@ async def health_check():
             "error_rate": metrics_middleware.error_count / max(metrics_middleware.request_count, 1)
         }
     except ModelNotLoadedError:
-        raise HTTPException(status_code=503, detail="Serviço indisponível")
+        raise HTTPException(status_code=503, detail="Service unavailable")
 
 @app.get("/metrics", include_in_schema=False)
 async def prometheus_metrics():
-    """Exposição de métricas no formato Prometheus"""
+    """Expose metrics in Prometheus format"""
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-@app.get("/metrics/json", tags=["Monitoramento"])
+@app.get("/metrics/json", tags=["Monitoring"])
 async def get_metrics(detector: OptimizedExoplanetDetectorService = Depends(get_detector_service)):
-    """Métricas detalhadas do sistema (JSON)"""
+    """Detailed system metrics (JSON)"""
     try:
+        print("[LOG] Route /metrics/json called")
         model_metrics = detector.get_metrics()
-
-        return {
+        print(f"[LOG] model_metrics: {model_metrics}")
+        response = {
             "model_metrics": model_metrics,
             "api_metrics": {
                 "total_requests": metrics_middleware.request_count,
@@ -289,17 +290,20 @@ async def get_metrics(detector: OptimizedExoplanetDetectorService = Depends(get_
                 "timestamp": datetime.now()
             }
         }
+        print(f"[LOG] response: {response}")
+        return response
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao obter métricas: {str(e)}")
+        print(f"[LOG] Error in /metrics/json route: {e}")
+        raise HTTPException(status_code=500, detail=f"Error obtaining metrics: {str(e)}")
 
-@app.post("/predict", response_model=OptimizedPredictionResult, tags=["Predição"])
+@app.post("/predict", response_model=OptimizedPredictionResult, tags=["Prediction"])
 async def predict_exoplanet(
     candidate: OptimizedExoplanetCandidate,
     background_tasks: BackgroundTasks,
     detector: OptimizedExoplanetDetectorService = Depends(get_detector_service)
 ):
     """
-    Predição otimizada de exoplaneta com validação avançada
+    Optimized exoplanet prediction with advanced validation
     """
     start = datetime.now()
     try:
@@ -315,13 +319,13 @@ async def predict_exoplanet(
     except PredictionError as e:
         raise HTTPException(status_code=500, detail=e.message)
 
-@app.post("/predict/batch", response_model=BatchPredictionResponse, tags=["Predição"])
+@app.post("/predict/batch", response_model=BatchPredictionResponse, tags=["Prediction"])
 async def predict_batch(
     request: BatchPredictionRequest,
     background_tasks: BackgroundTasks,
     detector: OptimizedExoplanetDetectorService = Depends(get_detector_service)
 ):
-    """Predição em lote otimizada"""
+    """Optimized batch prediction"""
     start_time = datetime.now()
 
     try:
@@ -335,7 +339,7 @@ async def predict_batch(
         PREDICTIONS_TOTAL.labels('batch').inc()
         PREDICTION_LATENCY.labels('batch').observe(total_time)
 
-        # Estatísticas do lote
+        # Batch statistics
         batch_stats = {
             "total_candidates": len(request.candidates),
             "successful_predictions": len(results),
@@ -345,7 +349,7 @@ async def predict_batch(
             "predictions_by_class": {}
         }
 
-        # Contar predições por classe
+        # Count predictions by class
         for result in results:
             class_name = result.prediction
             batch_stats["predictions_by_class"][class_name] = batch_stats["predictions_by_class"].get(class_name, 0) + 1
@@ -360,9 +364,9 @@ async def predict_batch(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro na predição em lote: {str(e)}")
 
-@app.get("/examples", tags=["Utilitários"])
+@app.get("/examples", tags=["Utilities"])
 async def get_examples():
-    """Exemplos otimizados para teste"""
+    """Optimized examples for testing"""
     return {
         "confirmed_planet": {
             "target_name": "Kepler-452b",
@@ -396,7 +400,7 @@ async def get_examples():
 
 @app.get("/cache/stats", tags=["Cache"])
 async def get_cache_stats():
-    """Estatísticas detalhadas do cache"""
+    """Detailed cache statistics"""
     return {
         "prediction_cache": prediction_cache.stats(),
         "model_cache": model_cache.stats(),
@@ -405,34 +409,34 @@ async def get_cache_stats():
 
 @app.delete("/cache/clear", tags=["Cache"])
 async def clear_cache():
-    """Limpa o cache (apenas para administradores)"""
+    """Clear cache (admin only)"""
     await prediction_cache.clear()
     await model_cache.clear()
-    return {"message": "Cache limpo com sucesso", "timestamp": datetime.now()}
+    return {"message": "Cache cleared successfully", "timestamp": datetime.now()}
 
-@app.get("/model/info", tags=["Monitoramento"])
+@app.get("/model/info", tags=["Monitoring"])
 async def model_info(detector: OptimizedExoplanetDetectorService = Depends(get_detector_service)):
-    """Informações do modelo carregado para troubleshooting"""
+    """Information about the loaded model for troubleshooting"""
     return detector.get_model_info()
 
-# Funções auxiliares para background tasks
+# Helper functions for background tasks
 async def log_prediction_request(target_name: str):
-    """Log de requisição de predição em background"""
-    logger.info(f"Predição solicitada para: {target_name}")
+    """Background log for prediction request"""
+    logger.info(f"Prediction requested for: {target_name}")
 
 async def log_batch_request(count: int, target_names: List[str]):
-    """Log de requisição em lote em background"""
-    logger.info(f"Predição em lote solicitada para {count} candidatos: {target_names[:5]}...")
+    """Background log for batch request"""
+    logger.info(f"Batch prediction requested for {count} candidates: {target_names[:5]}...")
 
-# Endpoint de desenvolvimento (apenas em modo debug)
+# Development endpoint (debug mode only)
 if settings.reload:
     @app.get("/dev/reload", include_in_schema=False)
     async def reload_models():
-        """Recarrega modelos (apenas desenvolvimento)"""
+        """Reload models (development only)"""
         try:
             detector_service = OptimizedExoplanetDetectorService()
             container.register("detector_service", detector_service)
-            return {"message": "Modelos recarregados", "timestamp": datetime.now()}
+            return {"message": "Models reloaded", "timestamp": datetime.now()}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
