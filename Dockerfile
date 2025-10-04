@@ -1,4 +1,3 @@
-# Dockerfile otimizado para produção
 FROM python:3.11-slim as base
 
 # Variáveis de ambiente para otimização
