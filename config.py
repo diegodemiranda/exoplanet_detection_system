@@ -1,5 +1,5 @@
 """
-Configurações centralizadas da aplicação
+Centralized application settings
 """
 from pydantic_settings import BaseSettings
 from typing import List
@@ -7,7 +7,7 @@ import os
 
 
 class Settings(BaseSettings):
-    """Configurações da aplicação usando Pydantic Settings"""
+    """Application settings using Pydantic Settings"""
 
     # API Settings
     api_title: str = "Exoplanet Detection API"
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     cors_methods: List[str] = ["*"]
     cors_headers: List[str] = ["*"]
 
-    # Model Settings (usar apenas modelo completo .keras)
+    # Model Settings (use only full .keras model)
     model_path: str = "models/"
     model_full_path: str = "models/exoplanet_model.keras"
     sequence_length: int = 2001
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     n_classes: int = 3
 
     # Cache Settings
-    cache_ttl: int = 3600  # 1 hora em segundos
+    cache_ttl: int = 3600  # 1 hour in seconds
     max_cache_size: int = 1000
 
     # Processing Settings
@@ -56,5 +56,5 @@ class Settings(BaseSettings):
         protected_namespaces = ('settings_',)
 
 
-# Instância global das configurações
+# Global settings instance
 settings = Settings()
