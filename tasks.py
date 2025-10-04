@@ -13,7 +13,7 @@ def ping():
 
 @app.task
 def predict_single(candidate: dict):
-    """Executa predição única via API e retorna o resultado JSON"""
+    """Execute a single prediction via API and return the JSON result"""
     url = f"{API_BASE_URL}/predict"
     try:
         with httpx.Client(timeout=60.0) as client:
@@ -25,7 +25,7 @@ def predict_single(candidate: dict):
 
 @app.task
 def predict_batch(candidates: list):
-    """Executa predição em lote via API e retorna o resultado JSON"""
+    """Execute a batch prediction via API and return the JSON result"""
     url = f"{API_BASE_URL}/predict/batch"
     payload = {"candidates": candidates}
     try:
@@ -38,13 +38,13 @@ def predict_batch(candidates: list):
 
 @app.task
 def warmup_model():
-    """Força inicialização do serviço e tentativa de aquecimento do modelo"""
+    """Force service initialization and attempt to warm up the model"""
     health_url = f"{API_BASE_URL}/health"
     examples_url = f"{API_BASE_URL}/examples"
     try:
         with httpx.Client(timeout=30.0) as client:
             h = client.get(health_url)
-            # Se não estiver healthy, tentar um predict com exemplo leve
+            # If not healthy, try a predict with a lightweight example
             ex = client.get(examples_url).json()
             example = ex.get("confirmed_planet") or next(iter(ex.values()), None)
             if example:
@@ -59,7 +59,7 @@ def warmup_model():
 
 @app.task
 def clear_cache():
-    """Solicita limpeza do cache da API"""
+    """Request API cache cleanup"""
     url = f"{API_BASE_URL}/cache/clear"
     try:
         with httpx.Client(timeout=30.0) as client:
@@ -71,7 +71,7 @@ def clear_cache():
 
 @app.task
 def fetch_metrics():
-    """Obtém métricas em JSON da API para agregação"""
+    """Obtain metrics in JSON from the API for aggregation"""
     url = f"{API_BASE_URL}/metrics/json"
     try:
         with httpx.Client(timeout=30.0) as client:
