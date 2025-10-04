@@ -207,15 +207,29 @@ Environment variables you’ll commonly set:
 ---
 
 ## Frontend (Web UI)
-The new UI is built with Dash and mounted under `/ui/` (the root `/` redirects there):
-- Search bar + Advanced filters (mission, status) with pagination and sortable columns.
-- Interactive Light Curve Viewer with zoom, pan, tooltips, normalization, simple model overlay, and optional period folding.
-- Details panel with key parameters and live “Classificar com IA” that calls the `/predict` endpoint.
-- High-contrast palette, semantic layout (header/main/footer), keyboard focus styles, and screen-reader alt text for charts.
+The project includes a modern, accessible analytics interface built with Dash by Plotly. This interface allows users to explore exoplanet data interactively, with features such as:
+- Search and filtering options for missions, statuses, and other parameters.
+- Detailed visualizations of light curves with options to normalize, fold by period, and overlay models.
+- AI-based classification of exoplanet candidates.
 
-Files:
-- `dashboard/app.py` (Dash app factory)
-- `dashboard/assets/style.css` (accessible, responsive styling)
+### Key Features
+- **Server**: The Dash application is powered by Flask, ensuring seamless integration with the FastAPI backend.
+- **Accessibility**: Designed with a high-contrast palette and WCAG 2.1 AA compliance.
+- **Deployment**: The UI is mounted at `/ui/` and can be accessed after starting the server.
+
+### How to Run the UI
+1. Ensure all dependencies are installed:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Start the application:
+   ```bash
+   python dashboard/app.py
+   ```
+3. Open your browser and navigate to:
+   ```
+   http://localhost:8050/ui/
+   ```
 
 ---
 
