@@ -52,9 +52,6 @@ structlog==24.1.0  # Logging estruturado
 sentry-sdk[fastapi]==1.40.0  # Error tracking
 
 # Testes e qualidade de código
-pytest==8.0.0
-pytest-asyncio==0.23.5
-pytest-cov==4.0.0
 black==24.1.1  # Code formatting
 flake8==7.0.0  # Linting
 mypy==1.8.0  # Type checking
