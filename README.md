@@ -186,7 +186,6 @@ Environment variables you’ll commonly set:
 ---
 
 ## Code Quality and Tooling
-- Tests: `pytest`, `pytest-asyncio`, `pytest-cov`.
 - Linting/Formatting/Types: `flake8`, `black`, `mypy`.
 - Pre-commit hooks recommended.
 - CI-friendly commands can be added as Make targets.
