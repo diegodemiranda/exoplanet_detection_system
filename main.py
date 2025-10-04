@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from starlette.responses import Response
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST, REGISTRY
 import uvicorn
 from contextlib import asynccontextmanager
-from typing import List, Any
+from typing import List, Any, Optional
 import logging
 from datetime import datetime
 import asyncio
@@ -27,6 +27,10 @@ from exceptions import (
     PredictionError
 )
 from cache import prediction_cache, model_cache
+
+# New: data ingestion utilities and mounting Dash
+from data_ingestion import fetch_catalogs, _load_flux_from_local_cache, _download_light_curve
+from starlette.middleware.wsgi import WSGIMiddleware
 
 # Clear existing metrics from registry to avoid duplication
 def clear_prometheus_registry():
@@ -230,8 +234,9 @@ async def http_exception_handler(request, exc: HTTPException):
 # Optimized endpoints
 @app.get("/", response_class=HTMLResponse, tags=["Interface"])
 async def root():
-    """Home page serving the SPA interface"""
-    return FileResponse("frontend/index.html")
+    """Redirect to the new Dash UI"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/ui/", status_code=307)
 
 @app.get("/style.css", include_in_schema=False)
 async def serve_css():
@@ -419,6 +424,116 @@ async def model_info(detector: OptimizedExoplanetDetectorService = Depends(get_d
     """Information about the loaded model for troubleshooting"""
     return detector.get_model_info()
 
+# New: Catalog search endpoint (for Dash UI)
+@app.get("/catalog/search", tags=["Catalog"])
+async def search_catalog(
+    query: Optional[str] = Query(default="", description="Search by target or star name"),
+    mission: Optional[List[str]] = Query(default=None, description="Filter by mission (repeat param for multiple)"),
+    status: Optional[List[str]] = Query(default=None, description="Filter by status: CONFIRMED, CANDIDATE, FALSE_POSITIVE"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
+):
+    """Search exoplanet catalog with basic filters and pagination.
+    Uses a cached copy per mission selection to keep responses fast.
+    """
+    try:
+        missions = mission or ["Kepler", "TESS", "K2"]
+        cache_key = f"catalog:{','.join(sorted(missions))}"
+        records = await model_cache.get(cache_key)
+        if records is None:
+            # Run potentially blocking fetch in a worker thread
+            records = await asyncio.to_thread(fetch_catalogs, missions)
+            await model_cache.set(cache_key, records, ttl=1800)  # 30 minutes
+
+        # Apply filters
+        q = (query or "").strip().lower()
+        filtered = []
+        for r in records:
+            if q and q not in str(r.get("target_name", "")).lower():
+                continue
+            if status:
+                if (r.get("label") or "").upper() not in {s.upper() for s in status}:
+                    continue
+            filtered.append(r)
+
+        total = len(filtered)
+
+        # Pagination
+        start = (page - 1) * page_size
+        end = start + page_size
+        page_items = filtered[start:end]
+
+        # Normalize output fields for the UI table
+        items = [
+            {
+                "target_name": it.get("target_name"),
+                "mission": it.get("mission"),
+                "status": (it.get("label") or "").upper(),
+                "ids": it.get("ids", {}),
+                # Placeholders for table columns we may not have yet
+                "star_name": None,
+                "orbital_period": None,
+                "planet_radius": None,
+                "distance_ly": None,
+            }
+            for it in page_items
+        ]
+        return {"total": total, "items": items, "page": page, "page_size": page_size}
+    except Exception as e:
+        logger.exception(f"Error in /catalog/search: {e}")
+        raise HTTPException(status_code=500, detail="Catalog search failed")
+
+# New: Light curve retrieval endpoint
+@app.get("/lightcurve", tags=["Catalog"])
+async def get_lightcurve(
+    mission: str = Query(..., description="Mission: Kepler, TESS, or K2"),
+    kepid: Optional[int] = Query(None),
+    tic: Optional[int] = Query(None),
+    epic: Optional[int] = Query(None),
+    target_name: Optional[str] = Query(None),
+    max_points: int = Query(2000, ge=100, le=10000),
+    download: bool = Query(False, description="Allow remote download if not in local cache")
+):
+    """Return light curve data (flux and synthetic time) for a given target.
+    Prefers local cache; optionally attempts remote download if allowed.
+    """
+    try:
+        mission_up = (mission or "").title()
+        ids = {"kepid": kepid, "tic": tic, "epic": epic}
+        # Build a compact cache key
+        id_part = next((f"{k}:{v}" for k, v in ids.items() if v is not None), target_name or "unknown")
+        lc_key = f"lc:{mission_up}:{id_part}"
+
+        cached = await model_cache.get(lc_key)
+        if cached is not None:
+            flux = cached
+        else:
+            rec = {"mission": mission_up, "ids": {k: v for k, v in ids.items() if v is not None}}
+            # Try local cache first (run in thread)
+            flux = await asyncio.to_thread(_load_flux_from_local_cache, rec)
+            if flux is None and download:
+                # Try remote download as fallback
+                flux = await asyncio.to_thread(_download_light_curve, rec)
+            if flux is None:
+                raise HTTPException(status_code=404, detail="Light curve not found in cache")
+            await model_cache.set(lc_key, flux, ttl=3600)
+
+        import numpy as np
+        arr = np.asarray(flux, dtype=float)
+        n = arr.size
+        if n > max_points:
+            idx = np.linspace(0, n - 1, max_points, dtype=int)
+            arr = arr[idx]
+            n = arr.size
+        # Synthetic time axis (indices in days relative)
+        time = (np.arange(n, dtype=float) / 48.0).tolist()  # assuming 30 min cadence
+        return {"mission": mission_up, "time": time, "flux": arr.tolist(), "target_name": target_name}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in /lightcurve: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve light curve")
+
 # Helper functions for background tasks
 async def log_prediction_request(target_name: str):
     """Background log for prediction request"""
@@ -439,6 +554,19 @@ if settings.reload:
             return {"message": "Models reloaded", "timestamp": datetime.now()}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+# Adicionar logs detalhados para depuração
+logger.info("Iniciando a montagem do Dash UI...")
+try:
+    from dashboard.app import create_dash_app  # local module
+    import flask
+
+    # Criar o servidor Dash/Flask com o prefixo correto
+    flask_server, dash_app = create_dash_app(requests_pathname_prefix="/ui/")
+    app.mount("/ui", WSGIMiddleware(flask_server))
+    logger.info("Dash UI montado com sucesso na rota /ui")
+except Exception as e:
+    logger.error(f"Erro ao montar o Dash UI: {e}")
 
 if __name__ == "__main__":
     uvicorn.run(
