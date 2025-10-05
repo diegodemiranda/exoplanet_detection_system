@@ -43,7 +43,7 @@ aioredis==2.0.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.18
-cryptography==42.0.2
+cryptography==44.0.1
 
 # Utilitários web
 aiofiles==23.2.1
