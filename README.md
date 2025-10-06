@@ -37,20 +37,7 @@ The global CNN branch utilizes three convolutional layers with increasing filter
 Note: The backend implements structured exception handling and custom metrics (see `src/backend/main.py`). When the model is not present or not loaded, prediction endpoints will return an error (the `/health` endpoint also reflects model readiness).
 
 Run locally (Python environment)
-
-1) Using the provided helper script (start.sh). This script expects a conda environment named `nasa_project` by default. It also sets `PYTHONPATH` to include `src/` so imports work from the repository root.
-
-zsh shell example:
-
-```bash
-# make the helper executable once
-chmod +x start.sh
-
-# start the API using the helper (expects conda and a 'nasa_project' env)
-./start.sh
-```
-
-2) Using a virtualenv and Uvicorn directly (recommended if you don't use conda):
+Using a virtualenv and Uvicorn directly (recommended if you don't use conda):
 
 ```bash
 python -m venv .venv
@@ -134,7 +121,6 @@ The project expects a Keras model file (see `models/exoplanet_model.keras`). Whe
 - Cache implementation: `src/backend/cache.py`.
 - Frontend sources: `src/frontend/src/` and top-level React components in that folder.
 - Monitoring: `monitoring/prometheus.yml` and `monitoring/grafana`.
-- 
 ---
 
 ## Model File and Evaluation Guide
