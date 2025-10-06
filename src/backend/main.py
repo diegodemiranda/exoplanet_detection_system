@@ -237,7 +237,7 @@ async def http_exception_handler(request, exc: HTTPException):
 @app.get("/", response_class=HTMLResponse, tags=["Interface"], include_in_schema=False)
 async def root():
     """Serve the React application"""
-    index_path = Path("frontend/dist/index.html")
+    index_path = Path("../frontend/dist/index.html")
     if index_path.exists():
         return FileResponse(index_path)
     else:
@@ -583,7 +583,7 @@ if settings.reload:
             raise HTTPException(status_code=500, detail=str(e))
 
 # Serve React static files
-frontend_dist = Path("frontend/dist")
+frontend_dist = Path("../frontend/dist")
 if frontend_dist.exists():
     app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="static")
     logger.info("✅ React frontend assets mounted successfully")
