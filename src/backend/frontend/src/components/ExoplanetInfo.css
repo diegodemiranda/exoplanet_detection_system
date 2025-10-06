@@ -1,0 +1,206 @@
+.exoplanet-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.info-section {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.prediction-section {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border-color: var(--color-primary);
+}
+
+.info-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.prediction-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.prediction-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.status-icon.confirmed {
+  color: var(--color-success);
+}
+
+.status-icon.candidate {
+  color: var(--color-warning);
+}
+
+.status-icon.false-positive {
+  color: var(--color-error);
+}
+
+.prediction-label {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.confidence-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.confidence-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.confidence-percentage {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.confidence-bar-full {
+  height: 8px;
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  border-radius: var(--radius-sm);
+  transition: width 0.5s ease-in-out;
+}
+
+.probabilities {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.probabilities-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.probability-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xs) 0;
+  font-size: var(--font-size-sm);
+}
+
+.probability-label {
+  color: var(--color-text-secondary);
+}
+
+.probability-value {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.info-grid {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-md);
+}
+
+.info-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.info-value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 1024px) {
+  .exoplanet-info {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+import React from 'react'
+import { Activity, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react'
+import './StatsOverview.css'
+
+const StatsOverview = ({ stats }) => {
+  const modelMetrics = stats?.model_metrics || {}
+  const apiMetrics = stats?.api_metrics || {}
+
+  const statCards = [
+    {
+      label: 'Acurácia do Modelo',
+      value: modelMetrics.accuracy ? `${(modelMetrics.accuracy * 100).toFixed(1)}%` : 'N/A',
+      icon: Activity,
+      color: 'primary'
+    },
+    {
+      label: 'Total de Predições',
+      value: modelMetrics.total_predictions || 0,
+      icon: TrendingUp,
+      color: 'success'
+    },
+    {
+      label: 'Taxa de Sucesso',
+      value: apiMetrics.error_rate ? `${((1 - apiMetrics.error_rate) * 100).toFixed(1)}%` : '100%',
+      icon: CheckCircle,
+      color: 'success'
+    },
+    {
+      label: 'Tempo Médio',
+      value: modelMetrics.avg_processing_time ? `${(modelMetrics.avg_processing_time * 1000).toFixed(0)}ms` : 'N/A',
+      icon: AlertTriangle,
+      color: 'warning'
+    }
+  ]
+
+  return (
+    <div className="stats-overview">
+      {statCards.map((stat, index) => (
+        <div key={index} className={`stat-card stat-${stat.color}`}>
+          <div className="stat-icon-wrapper">
+            <stat.icon className="stat-icon" size={24} aria-hidden="true" />
+          </div>
+          <div className="stat-content">
+            <p className="stat-label">{stat.label}</p>
+            <p className="stat-value">{stat.value}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default StatsOverview
+

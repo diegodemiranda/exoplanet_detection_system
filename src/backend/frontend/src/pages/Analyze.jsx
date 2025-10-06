@@ -1,0 +1,11 @@
+import React from 'react'
+import PredictionUpload from '../components/PredictionUpload'
+import './Analyze.css'
+const Analyze = () => {
+  return (
+    <div className="analyze-page page-enter">
+      <PredictionUpload />
+    </div>
+  )
+}
+export default Analyze

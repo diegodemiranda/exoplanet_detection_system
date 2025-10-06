@@ -1,0 +1,338 @@
+.exoplanet-card {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.exoplanet-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.card-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+}
+
+.status-icon.confirmed {
+  color: var(--color-success);
+}
+
+.status-icon.candidate {
+  color: var(--color-warning);
+}
+
+.status-icon.false-positive {
+  color: var(--color-error);
+}
+
+.status-label {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  flex: 1;
+}
+
+.card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.meta-label {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.meta-value {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.confidence-bar {
+  margin-top: var(--spacing-sm);
+}
+
+.confidence-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+}
+
+.confidence-label span:first-child {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.confidence-value {
+  font-weight: 600;
+}
+
+.confidence-value.high {
+  color: var(--color-success);
+}
+
+.confidence-value.medium {
+  color: var(--color-warning);
+}
+
+.confidence-value.low {
+  color: var(--color-error);
+}
+
+.confidence-track {
+  height: 6px;
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-slow);
+}
+
+.confidence-fill.high {
+  background-color: var(--color-success);
+}
+
+.confidence-fill.medium {
+  background-color: var(--color-warning);
+}
+
+.confidence-fill.low {
+  background-color: var(--color-error);
+}
+
+.card-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background-color: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  transition: background-color var(--transition-fast);
+  margin-top: auto;
+}
+
+.card-link:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.card-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+import React, { useState, useEffect } from 'react'
+import { Search, Filter, Loader, AlertCircle } from 'lucide-react'
+import SearchBar from '../components/SearchBar'
+import FilterPanel from '../components/FilterPanel'
+import ExoplanetCard from '../components/ExoplanetCard'
+import StatsOverview from '../components/StatsOverview'
+import { searchExoplanets, getSystemMetrics } from '../services/api'
+import './Dashboard.css'
+
+const Dashboard = () => {
+  const [exoplanets, setExoplanets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filters, setFilters] = useState({
+    mission: '',
+    method: 'Transit',
+    status: '',
+    starType: ''
+  })
+  const [stats, setStats] = useState(null)
+  const [showFilters, setShowFilters] = useState(false)
+
+  useEffect(() => {
+    fetchMetrics()
+    loadSampleData()
+  }, [])
+
+  const fetchMetrics = async () => {
+    try {
+      const metrics = await getSystemMetrics()
+      setStats(metrics)
+    } catch (err) {
+      console.error('Error loading metrics:', err)
+    }
+  }
+
+  const loadSampleData = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      // Sample data for demonstration
+      const sampleData = [
+        {
+          target_name: 'Kepler-186f',
+          mission: 'Kepler',
+          status: 'CONFIRMED',
+          stellar_params: { teff: 3788, radius: 0.47, mass: 0.48 },
+          transit_params: { period: 129.9, depth: 0.0012 },
+          prediction: 'CONFIRMED',
+          confidence: 0.95
+        },
+        {
+          target_name: 'Kepler-452b',
+          mission: 'Kepler',
+          status: 'CONFIRMED',
+          stellar_params: { teff: 5757, radius: 1.11, mass: 1.04 },
+          transit_params: { period: 384.8, depth: 0.0008 },
+          prediction: 'CONFIRMED',
+          confidence: 0.92
+        },
+        {
+          target_name: 'TOI-700d',
+          mission: 'TESS',
+          status: 'CONFIRMED',
+          stellar_params: { teff: 3480, radius: 0.42, mass: 0.41 },
+          transit_params: { period: 37.4, depth: 0.0015 },
+          prediction: 'CONFIRMED',
+          confidence: 0.88
+        }
+      ]
+
+      setExoplanets(sampleData)
+    } catch (err) {
+      setError('Erro ao carregar dados. Por favor, tente novamente.')
+      console.error('Error loading data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearch = async (query) => {
+    setSearchQuery(query)
+    // Implement search logic here
+  }
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters)
+    // Implement filter logic here
+  }
+
+  const filteredExoplanets = exoplanets.filter(planet => {
+    const matchesSearch = planet.target_name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesMission = !filters.mission || planet.mission === filters.mission
+    const matchesStatus = !filters.status || planet.status === filters.status
+    return matchesSearch && matchesMission && matchesStatus
+  })
+
+  return (
+    <div className="dashboard page-enter">
+      <div className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">Detector de Exoplanetas</h1>
+          <p className="dashboard-subtitle">
+            Explore e analise candidatos a exoplanetas usando Machine Learning
+          </p>
+        </div>
+      </div>
+
+      {stats && <StatsOverview stats={stats} />}
+
+      <div className="dashboard-controls">
+        <SearchBar onSearch={handleSearch} />
+        <button
+          className="filter-toggle"
+          onClick={() => setShowFilters(!showFilters)}
+          aria-expanded={showFilters}
+          aria-label="Alternar filtros"
+        >
+          <Filter size={18} />
+          Filtros
+        </button>
+      </div>
+
+      {showFilters && (
+        <FilterPanel filters={filters} onChange={handleFilterChange} />
+      )}
+
+      {loading ? (
+        <div className="loading-state" role="status" aria-live="polite">
+          <Loader className="animate-spin" size={40} aria-hidden="true" />
+          <p>Carregando dados...</p>
+        </div>
+      ) : error ? (
+        <div className="error-state" role="alert">
+          <AlertCircle size={40} aria-hidden="true" />
+          <p>{error}</p>
+          <button className="btn-primary" onClick={loadSampleData}>
+            Tentar Novamente
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="results-header">
+            <h2 className="results-count">
+              {filteredExoplanets.length} {filteredExoplanets.length === 1 ? 'resultado' : 'resultados'}
+            </h2>
+          </div>
+
+          <div className="exoplanet-grid">
+            {filteredExoplanets.map((planet) => (
+              <ExoplanetCard key={planet.target_name} planet={planet} />
+            ))}
+          </div>
+
+          {filteredExoplanets.length === 0 && (
+            <div className="empty-state">
+              <Search size={48} aria-hidden="true" />
+              <p>Nenhum resultado encontrado</p>
+              <p className="empty-subtitle">Tente ajustar seus filtros ou termo de busca</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+export default Dashboard
+

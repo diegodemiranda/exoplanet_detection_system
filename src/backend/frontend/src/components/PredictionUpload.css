@@ -1,0 +1,984 @@
+.prediction-upload {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.upload-header {
+  margin-bottom: var(--spacing-xl);
+  text-align: center;
+}
+
+.upload-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.upload-subtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: -2px;
+}
+
+.tab:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-hover);
+}
+
+.tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Form */
+.manual-form {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+}
+
+.form-section {
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: var(--font-size-xs);
+}
+
+.form-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.submit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-xl);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* CSV Upload */
+.csv-upload-area {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+}
+
+.upload-instructions {
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background-color: rgba(59, 130, 246, 0.05);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.upload-instructions h3 {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.upload-instructions ul {
+  list-style-position: inside;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.upload-instructions code {
+  background-color: var(--color-bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: 'Monaco', monospace;
+  font-size: var(--font-size-xs);
+}
+
+.upload-box {
+  position: relative;
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background-color: var(--color-bg-primary);
+}
+
+.upload-label:hover {
+  border-color: var(--color-primary);
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.upload-text {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.upload-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Alerts */
+.alert {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-top: var(--spacing-lg);
+}
+
+.alert-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+}
+
+/* Results */
+.prediction-result {
+  margin-top: var(--spacing-xl);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.result-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-xl);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.result-icon.confirmed {
+  color: var(--color-success);
+}
+
+.result-icon.candidate {
+  color: var(--color-warning);
+}
+
+.result-icon.false-positive {
+  color: var(--color-error);
+}
+
+.result-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.result-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-md);
+}
+
+.result-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.result-value {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.confidence-value {
+  color: var(--color-primary);
+  font-size: var(--font-size-lg);
+}
+
+.probabilities-grid {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-md);
+}
+
+.probabilities-grid h4 {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.probability-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-xs) 0;
+  font-size: var(--font-size-sm);
+}
+
+/* CSV Results */
+.csv-results {
+  margin-top: var(--spacing-xl);
+}
+
+.results-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.result-card {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  transition: all var(--transition-base);
+}
+
+.result-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.result-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.result-card h4 {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.card-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.prediction-badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.prediction-badge.confirmed {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+}
+
+.prediction-badge.candidate {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+}
+
+.prediction-badge.false_positive {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+}
+
+.batch-stats {
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.batch-stats h4 {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.stat-item span:first-child {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.stat-item span:last-child {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    flex-direction: column;
+  }
+
+  .tab {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+}
+import React, { useState } from 'react'
+import { Upload, FileText, Loader, CheckCircle, XCircle, Info } from 'lucide-react'
+import { predictExoplanet, batchPredict } from '../services/api'
+import './PredictionUpload.css'
+
+const PredictionUpload = () => {
+  const [activeTab, setActiveTab] = useState('manual')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+
+  // Manual input state
+  const [manualData, setManualData] = useState({
+    target_name: '',
+    flux_data: '',
+    mission: 'Kepler',
+    teff: '',
+    logg: '',
+    feh: '',
+    radius: '',
+    mass: '',
+    period: '',
+    epoch: '',
+    duration: '',
+    depth: ''
+  })
+
+  // CSV upload state
+  const [csvFile, setCsvFile] = useState(null)
+  const [csvResults, setCsvResults] = useState(null)
+
+  const handleManualInputChange = (field, value) => {
+    setManualData(prev => ({ ...prev, [field]: value }))
+    setError(null)
+  }
+
+  const parseFluxData = (fluxString) => {
+    try {
+      // Parse comma-separated values
+      const values = fluxString.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v))
+      if (values.length < 100) {
+        throw new Error('Dados de fluxo devem ter pelo menos 100 pontos')
+      }
+      return values
+    } catch (err) {
+      throw new Error('Formato inválido. Use valores separados por vírgula')
+    }
+  }
+
+  const handleManualSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      // Parse flux data
+      const fluxArray = parseFluxData(manualData.flux_data)
+
+      // Prepare candidate data
+      const candidate = {
+        target_name: manualData.target_name || 'Custom-Target',
+        light_curve: {
+          flux: fluxArray,
+          mission: manualData.mission
+        },
+        stellar_params: manualData.teff ? {
+          teff: parseFloat(manualData.teff),
+          logg: manualData.logg ? parseFloat(manualData.logg) : undefined,
+          feh: manualData.feh ? parseFloat(manualData.feh) : undefined,
+          radius: manualData.radius ? parseFloat(manualData.radius) : undefined,
+          mass: manualData.mass ? parseFloat(manualData.mass) : undefined
+        } : undefined,
+        transit_params: manualData.period ? {
+          period: parseFloat(manualData.period),
+          epoch: manualData.epoch ? parseFloat(manualData.epoch) : undefined,
+          duration: manualData.duration ? parseFloat(manualData.duration) : undefined,
+          depth: manualData.depth ? parseFloat(manualData.depth) : undefined
+        } : undefined
+      }
+
+      const prediction = await predictExoplanet(candidate)
+      setResult(prediction)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Erro ao processar predição')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCsvUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setCsvFile(file)
+    setError(null)
+    setCsvResults(null)
+
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      setError('Por favor, selecione um arquivo CSV')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const text = await file.text()
+      const lines = text.split('\n').filter(line => line.trim())
+
+      if (lines.length < 2) {
+        throw new Error('Arquivo CSV deve ter cabeçalho e pelo menos uma linha de dados')
+      }
+
+      // Parse CSV header
+      const header = lines[0].split(',').map(h => h.trim())
+
+      // Expected columns: target_name, flux (comma-separated or multiple flux columns)
+      const candidates = []
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim())
+
+        if (values.length < 2) continue
+
+        const targetName = values[0]
+        const fluxData = values.slice(1).map(v => parseFloat(v)).filter(v => !isNaN(v))
+
+        if (fluxData.length >= 100) {
+          candidates.push({
+            target_name: targetName || `Target-${i}`,
+            light_curve: {
+              flux: fluxData,
+              mission: 'Kepler'
+            }
+          })
+        }
+      }
+
+      if (candidates.length === 0) {
+        throw new Error('Nenhum candidato válido encontrado no CSV')
+      }
+
+      // Make batch prediction
+      const results = await batchPredict(candidates)
+      setCsvResults(results)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Erro ao processar arquivo CSV')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getResultIcon = (prediction) => {
+    if (prediction === 'CONFIRMED') return <CheckCircle className="result-icon confirmed" size={48} />
+    if (prediction === 'FALSE_POSITIVE') return <XCircle className="result-icon false-positive" size={48} />
+    return <Info className="result-icon candidate" size={48} />
+  }
+
+  const getResultLabel = (prediction) => {
+    if (prediction === 'CONFIRMED') return 'Exoplaneta Confirmado'
+    if (prediction === 'FALSE_POSITIVE') return 'Falso Positivo'
+    return 'Candidato a Exoplaneta'
+  }
+
+  return (
+    <div className="prediction-upload">
+      <div className="upload-header">
+        <h2 className="upload-title">Análise de Dados Personalizados</h2>
+        <p className="upload-subtitle">
+          Faça upload de seus próprios dados ou insira manualmente para análise com IA
+        </p>
+      </div>
+
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'manual' ? 'active' : ''}`}
+          onClick={() => setActiveTab('manual')}
+        >
+          <FileText size={18} />
+          Entrada Manual
+        </button>
+        <button
+          className={`tab ${activeTab === 'csv' ? 'active' : ''}`}
+          onClick={() => setActiveTab('csv')}
+        >
+          <Upload size={18} />
+          Upload CSV
+        </button>
+      </div>
+
+      {activeTab === 'manual' ? (
+        <div className="tab-content">
+          <form onSubmit={handleManualSubmit} className="manual-form">
+            <div className="form-section">
+              <h3 className="section-title">Informações Básicas</h3>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="target_name">Nome do Alvo</label>
+                  <input
+                    id="target_name"
+                    type="text"
+                    placeholder="Ex: Meu-Exoplaneta-1"
+                    value={manualData.target_name}
+                    onChange={(e) => handleManualInputChange('target_name', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="mission">Missão</label>
+                  <select
+                    id="mission"
+                    value={manualData.mission}
+                    onChange={(e) => handleManualInputChange('mission', e.target.value)}
+                  >
+                    <option value="Kepler">Kepler</option>
+                    <option value="TESS">TESS</option>
+                    <option value="K2">K2</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">Dados de Fluxo (Obrigatório)</h3>
+              <div className="form-group full-width">
+                <label htmlFor="flux_data">
+                  Dados de Fluxo Normalizado (mínimo 100 pontos, separados por vírgula)
+                </label>
+                <textarea
+                  id="flux_data"
+                  placeholder="Ex: 1.0002, 0.9998, 0.9995, 1.0001, ..."
+                  rows={6}
+                  value={manualData.flux_data}
+                  onChange={(e) => handleManualInputChange('flux_data', e.target.value)}
+                  required
+                />
+                <small className="form-hint">
+                  Cole seus dados de fluxo separados por vírgula. Mínimo 100 pontos.
+                </small>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">Parâmetros Estelares (Opcional)</h3>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="teff">Temperatura Efetiva (K)</label>
+                  <input
+                    id="teff"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 5777"
+                    value={manualData.teff}
+                    onChange={(e) => handleManualInputChange('teff', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="logg">log g (cm/s²)</label>
+                  <input
+                    id="logg"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 4.44"
+                    value={manualData.logg}
+                    onChange={(e) => handleManualInputChange('logg', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="feh">Metalicidade [Fe/H]</label>
+                  <input
+                    id="feh"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 0.0"
+                    value={manualData.feh}
+                    onChange={(e) => handleManualInputChange('feh', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="radius">Raio Estelar (R☉)</label>
+                  <input
+                    id="radius"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 1.0"
+                    value={manualData.radius}
+                    onChange={(e) => handleManualInputChange('radius', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="mass">Massa Estelar (M☉)</label>
+                  <input
+                    id="mass"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 1.0"
+                    value={manualData.mass}
+                    onChange={(e) => handleManualInputChange('mass', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h3 className="section-title">Parâmetros de Trânsito (Opcional)</h3>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="period">Período Orbital (dias)</label>
+                  <input
+                    id="period"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 365.25"
+                    value={manualData.period}
+                    onChange={(e) => handleManualInputChange('period', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="epoch">Época (BJD)</label>
+                  <input
+                    id="epoch"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 2455000"
+                    value={manualData.epoch}
+                    onChange={(e) => handleManualInputChange('epoch', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="duration">Duração (horas)</label>
+                  <input
+                    id="duration"
+                    type="number"
+                    step="0.01"
+                    placeholder="Ex: 13.0"
+                    value={manualData.duration}
+                    onChange={(e) => handleManualInputChange('duration', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="depth">Profundidade (fração)</label>
+                  <input
+                    id="depth"
+                    type="number"
+                    step="0.00001"
+                    placeholder="Ex: 0.00084"
+                    value={manualData.depth}
+                    onChange={(e) => handleManualInputChange('depth', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" className="submit-button" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader className="animate-spin" size={18} />
+                  Analisando...
+                </>
+              ) : (
+                'Analisar com IA'
+              )}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="tab-content">
+          <div className="csv-upload-area">
+            <div className="upload-instructions">
+              <h3>Formato do CSV</h3>
+              <p>O arquivo CSV deve conter:</p>
+              <ul>
+                <li>Primeira coluna: <code>target_name</code> (nome do alvo)</li>
+                <li>Colunas seguintes: valores de fluxo (mínimo 100 pontos)</li>
+                <li>Exemplo: <code>Kepler-1,1.0002,0.9998,0.9995,...</code></li>
+              </ul>
+            </div>
+
+            <div className="upload-box">
+              <input
+                type="file"
+                id="csv-upload"
+                accept=".csv"
+                onChange={handleCsvUpload}
+                className="file-input"
+              />
+              <label htmlFor="csv-upload" className="upload-label">
+                <Upload size={48} />
+                <span className="upload-text">
+                  {csvFile ? csvFile.name : 'Clique para selecionar ou arraste um arquivo CSV'}
+                </span>
+                <span className="upload-hint">Arquivo CSV com dados de curva de luz</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="alert alert-error">
+          <XCircle size={20} />
+          <p>{error}</p>
+        </div>
+      )}
+
+      {result && (
+        <div className="prediction-result">
+          <div className="result-header">
+            {getResultIcon(result.prediction)}
+            <h3 className="result-title">{getResultLabel(result.prediction)}</h3>
+          </div>
+          <div className="result-details">
+            <div className="result-item">
+              <span className="result-label">Alvo:</span>
+              <span className="result-value">{result.target_name}</span>
+            </div>
+            <div className="result-item">
+              <span className="result-label">Confiança:</span>
+              <span className="result-value confidence-value">
+                {(result.confidence * 100).toFixed(2)}%
+              </span>
+            </div>
+            {result.probabilities && (
+              <div className="probabilities-grid">
+                <h4>Probabilidades:</h4>
+                {Object.entries(result.probabilities).map(([key, value]) => (
+                  <div key={key} className="probability-item">
+                    <span>{key}:</span>
+                    <span>{(value * 100).toFixed(2)}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {csvResults && (
+        <div className="csv-results">
+          <h3 className="results-title">
+            Resultados do Lote ({csvResults.results?.length || 0} predições)
+          </h3>
+          <div className="results-grid">
+            {csvResults.results?.map((result, index) => (
+              <div key={index} className="result-card">
+                <div className="card-header">
+                  {getResultIcon(result.prediction)}
+                  <h4>{result.target_name}</h4>
+                </div>
+                <div className="card-body">
+                  <div className="card-item">
+                    <span>Predição:</span>
+                    <span className={`prediction-badge ${result.prediction.toLowerCase()}`}>
+                      {getResultLabel(result.prediction)}
+                    </span>
+                  </div>
+                  <div className="card-item">
+                    <span>Confiança:</span>
+                    <span className="confidence-value">
+                      {(result.confidence * 100).toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {csvResults.batch_stats && (
+            <div className="batch-stats">
+              <h4>Estatísticas do Lote:</h4>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <span>Total:</span>
+                  <span>{csvResults.batch_stats.total_candidates}</span>
+                </div>
+                <div className="stat-item">
+                  <span>Taxa de Sucesso:</span>
+                  <span>{(csvResults.batch_stats.success_rate * 100).toFixed(1)}%</span>
+                </div>
+                <div className="stat-item">
+                  <span>Tempo Médio:</span>
+                  <span>{(csvResults.batch_stats.avg_processing_time * 1000).toFixed(0)}ms</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default PredictionUpload
