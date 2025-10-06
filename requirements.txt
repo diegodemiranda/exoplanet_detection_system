@@ -24,10 +24,6 @@ seaborn==0.13.2
 plotly==5.18.0
 bokeh==3.3.4
 
-# UI com Dash
-dash==2.17.1
-dash-bootstrap-components==1.6.0
-
 # Performance e otimização
 numba==0.59.0
 cython==3.0.8
