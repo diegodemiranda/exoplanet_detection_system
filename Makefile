@@ -1,25 +1,40 @@
-PHONY: help cert-dev up down logs ps grafana
+.PHONY: help cert-dev up down logs ps grafana build-frontend
 
 help:
-	@echo "Targets disponíveis:"
-	@echo "  cert-dev       - Gera certificado autoassinado para Nginx (localhost)"
-	@echo "  up             - Sobe todos os serviços com Docker Compose"
-	@echo "  down           - Para e remove os serviços"
-	@echo "  logs           - Mostra logs da API"
-	@echo "  ps             - Lista serviços em execução"
-	@echo "  grafana        - Mostra URL do Grafana"
+	@echo "Available targets:"
+	@echo "  cert-dev       - Generate a self-signed TLS certificate for Nginx (localhost)"
+	@echo "  up             - Start all services with Docker Compose (builds frontend first if present)"
+	@echo "  down           - Stop and remove services"
+	@echo "  logs           - Stream API logs"
+	@echo "  ps             - List running services"
+	@echo "  grafana        - Show Grafana URL"
+	@echo "  build-frontend - Build the frontend locally (if present)"
 
 cert-dev:
 	@mkdir -p nginx/ssl
-	@echo "Gerando certificado autoassinado em nginx/ssl/..."
+	@echo "Creating self-signed certificate under nginx/ssl/..."
 	@openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes \
 		-keyout nginx/ssl/key.pem -out nginx/ssl/cert.pem \
 		-subj "/CN=localhost" \
 		-addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
-	@echo "Certificado gerado: nginx/ssl/cert.pem"
-	@echo "Chave privada:      nginx/ssl/key.pem"
+	@echo "Certificate created: nginx/ssl/cert.pem"
+	@echo "Private key:        nginx/ssl/key.pem"
+
+# Build the frontend locally (if the frontend source exists).
+# This is useful for local development so the static assets are available
+# to the nginx/frontend service without relying on the docker build stage.
+build-frontend:
+	@echo "Checking for frontend source in src/frontend..."
+	@if [ -d "src/frontend" ]; then \
+		echo "Building frontend (src/frontend)..."; \
+		cd src/frontend && npm ci --no-audit --fund=false && npm run build; \
+		echo "Frontend build finished."; \
+	else \
+		echo "No src/frontend directory found — skipping frontend build."; \
+	fi
 
 up:
+	@$(MAKE) build-frontend
 	docker compose up --build -d
 
 down:
@@ -30,5 +45,3 @@ logs:
 
 ps:
 	docker compose ps
-
-
