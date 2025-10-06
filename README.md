@@ -17,262 +17,124 @@ The global CNN branch utilizes three convolutional layers with increasing filter
 
 ---
 
-## Table of Contents
-- [Overview and Goals](#overview-and-goals)
-- [System Architecture](#system-architecture)
-- [Design Patterns and Engineering Practices](#design-patterns-and-engineering-practices)
-- [Data Models and Validation](#data-models-and-validation)
-- [API Endpoints and Contracts](#api-endpoints-and-contracts)
-- [Caching Strategy](#caching-strategy)
-- [Error Handling Strategy](#error-handling-strategy)
-- [Configuration and Environment](#configuration-and-environment)
-- [Containerization and Deployment](#containerization-and-deployment)
-- [Security and Robustness](#security-and-robustness)
-- [Monitoring and Observability Stack](#monitoring-and-observability-stack)
-- [Code Quality and Tooling](#code-quality-and-tooling)
-- [Libraries and Rationale](#libraries-and-rationale-selected)
-- [Frontend (Web UI)](#frontend-web-ui)
-- [How to Run (Dev and Docker)](#how-to-run)
-- [Model File and Evaluation Guide](#model-file-and-evaluation-guide)
-- [Troubleshooting](#troubleshooting)
-- [Acknowledgements and License](#acknowledgements-and-license)
+## Quick overview
+- Backend: FastAPI application at `src/backend/main.py` (run with Uvicorn: `backend.main:app`).
+- Frontend: React + Vite in `src/frontend` (dev with `npm run dev`, build with `npm run build` → output `src/frontend/dist/`).
+- Model: expected Keras file `models/exoplanet_model.keras` (configurable via environment variables).
+- Containers & services: `docker-compose.yml` defines the full stack used in development (API, redis, prometheus, grafana, nginx, worker).
+- Logs: main API log file: `exoplanet_api.log`.
 
----
+### What this service actually provides
+- A FastAPI-based HTTP API that exposes (at least) the following routes:
+  - GET /            → serves the frontend `dist/index.html` when the frontend is built; otherwise returns a small HTML landing page with build instructions.
+  - GET /health      → health & readiness information (returns 503 when the model is not loaded).
+  - GET /metrics     → Prometheus exposition format for runtime metrics.
+  - GET /metrics/json → JSON-formatted metrics (requires the detector service to be available).
+  - POST /predict    → single prediction endpoint (expects validated candidate payload).
+  - POST /predict/batch → batch prediction endpoint.
+  - GET /examples    → example payloads for quick manual tests.
 
-## Overview and Goals
-This repository contains a production-grade, end-to-end exoplanet detection platform designed for reliability, performance, and maintainability. It exposes:
-- A FastAPI-powered inference API with strict validation and structured error handling.
-- A hybrid CNN + BiLSTM model implementation in TensorFlow/Keras.
-- A fully instrumented runtime with Prometheus metrics and Grafana dashboards.
-- A modern, accessible analytics UI built with Dash by Plotly and mounted at `/ui/`.
-- A hardened reverse proxy (Nginx) with HTTPS support.
-- A Celery worker for background/batch tasks leveraging Redis.
+Note: The backend implements structured exception handling and custom metrics (see `src/backend/main.py`). When the model is not present or not loaded, prediction endpoints will return an error (the `/health` endpoint also reflects model readiness).
 
----
+Run locally (Python environment)
 
-## System Architecture
-Core components:
-- API Layer (FastAPI): request validation, routing, error handling, metrics, UI serving.
-- Model Service (TensorFlow/Keras): hybrid CNN + BiLSTM multi-branch inference.
-- Preprocessing & Feature Extraction: robust normalization, outlier clipping, local window extraction, statistical features.
-- Caching: in-memory LRU + TTL (`OptimizedCache`) for prediction results and models.
-- Background Worker: Celery tasks (single/batch prediction, warmup, cache maintenance, metrics collection).
-- Reverse Proxy: Nginx with TLS (dev certs via Makefile) and HTTP→HTTPS redirect.
-- Monitoring: Prometheus (scrape /metrics) and Grafana (pre-provisioned datasource and dashboard).
-- Frontend: Dash app mounted under `/ui/` and reachable from `/` via redirect.
+1) Using the provided helper script (start.sh). This script expects a conda environment named `nasa_project` by default. It also sets `PYTHONPATH` to include `src/` so imports work from the repository root.
 
-Data flow (inference):
-1) Client submits a candidate with light-curve flux and mission → API validates via Pydantic V2.
-2) Service preprocesses flux (median+MAD normalization, clipping, resize) and derives local window and auxiliary features.
-3) TensorFlow model runs inference on [global_view, local_view, auxiliary_features].
-4) API returns class prediction, probability distribution, timestamps, and quality metrics.
-5) Metrics and cache are updated; Prometheus/Grafana visualize performance and reliability.
+zsh shell example:
 
----
+```bash
+# make the helper executable once
+chmod +x start.sh
 
-## Design Patterns and Engineering Practices
-- Dependency Injection: lightweight service container (`ServiceContainer`) for detector service.
-- Strategy Interface: `IExoplanetDetector` to enable future alternative backends (e.g., Torch) without API changes.
-- Middleware: HTTP metrics collection and structured error handling.
-- Background Tasks: FastAPI background tasks for logging and periodic cache cleanup via lifespan.
-- Async & Concurrency: `asyncio` for non-blocking endpoints and batch/pipeline steps; semaphore-limited parallelism in batch prediction.
-- Configuration as Code: centralized `config.py` with `pydantic-settings`.
+# start the API using the helper (expects conda and a 'nasa_project' env)
+./start.sh
+```
 
----
+2) Using a virtualenv and Uvicorn directly (recommended if you don't use conda):
 
-## Data Models and Validation
-Pydantic V2 models in `models.py`:
-- Light Curve: min length, finite values validation, allowed missions (Kepler, K2, TESS).
-- Stellar and Transit Parameters: physical ranges (e.g., Teff, logg, [Fe/H], radius, mass).
-- Candidate: target_name sanitized; nested models; extras forbidden.
-- PredictionResult: bounds on probabilities and confidence; timestamps and metadata.
-- Batch Request/Response: size limits and batch-level statistics.
-
-Strict validation blocks malformed inputs early, returning detailed error codes using custom exceptions (`exceptions.py`).
-
----
-
-## API Endpoints and Contracts
-- GET `/` → redirects to the new Dash UI at `/ui/`.
-- GET `/health` → liveness/readiness; 200 healthy or 503 if model not loaded.
-- GET `/metrics` → Prometheus exposition format (latency histograms, counters, uptime).
-- GET `/metrics/json` → JSON metrics (API, model, caches, system info).
-- GET `/examples` → example payloads for quick manual tests.
-- GET `/cache/stats` → cache stats snapshots.
-- DELETE `/cache/clear` → clear prediction and model caches.
-- GET `/model/info` → model loaded status, weights path, input shapes, class labels.
-- GET `/catalog/search` → search catalogs with filters and pagination (missions: Kepler/TESS/K2; status filters; returns normalized table items).
-- GET `/lightcurve` → retrieve light curve from local cache (and optional remote download) with decimation and synthetic time axis.
-- POST `/predict` → single prediction (Pydantic-validated input, structured output).
-- POST `/predict/batch` → batch prediction with aggregated stats.
-
-Error codes:
-- 422 for invalid input; 400/500 for processing/prediction errors; 503 when model is not ready (no weights loaded).
-
----
-
-## Caching Strategy
-`cache.py` implements an async LRU + TTL cache with per-entry metadata:
-- TTL-based expiry and active cleanup.
-- LRU eviction under pressure.
-- Stats: size, hit rate, access counters, entry ages.
-Prediction responses are cached using a strong key derived from candidate content (flux hash + mission + target).
-A small `model_cache` is also used for catalogs and light curves.
-
----
-
-## Error Handling Strategy
-Custom exception hierarchy (`ExoplanetDetectionError` and specializations) normalized by FastAPI exception handlers:
-- InvalidDataError, ModelNotLoadedError, ProcessingError, PredictionError mapped to structured JSON with codes and details.
-- Logs include error context without leaking internals.
-
----
-
-## Configuration and Environment
-`config.py` centralizes settings via `pydantic-settings` (env + .env):
-- API: title, description, version, host/port, reload.
-- CORS: origins, methods, headers.
-- Model: `model_path`, `model_full_path` (default `models/exoplanet_model.keras`), lengths, features, classes.
-- Cache: `cache_ttl`, `max_cache_size`.
-- Performance: switches for model/prediction caching; batch size.
-- Logging: level/format.
-
-Environment variables you’ll commonly set:
-- `MODEL_FULL_PATH=/app/models/exoplanet_model.keras`
-- `LOG_LEVEL=INFO`
-- `CACHE_TTL=3600`
-- `EXO_API_BASE_URL` (optional; when the UI is served behind a distinct domain)
-
----
-
-## Containerization and Deployment
-- Dockerfile: multi-stage build (builder venv + slim runtime), BLAS/LAPACK, curl for healthcheck, non-root user, Gunicorn + Uvicorn workers.
-- docker-compose.yml: full stack up by default:
-  - exoplanet-api (FastAPI + Dash UI)
-  - redis (broker/cache)
-  - prometheus (scrapes `/metrics`)
-  - grafana (provisioned datasource and dashboards)
-  - nginx (HTTPS reverse proxy; 80→443 redirect)
-  - worker (Celery tasks; calls API)
-- Volumes: logs/, models/, cache/ mounted into the API container.
-- Nginx TLS:
-  - Generate dev certs: `make cert-dev` (creates `nginx/ssl/cert.pem` and `nginx/ssl/key.pem`).
-  - Replace with production certificates in `nginx/ssl/` for real deployments.
-
----
-
-## Security and Robustness
-- HTTPS by default via Nginx (dev certs; swap in real certs in prod).
-- Strict validation on all inputs; fields bounded and types enforced.
-- Structured error responses, no internal stack traces exposed.
-- CORS configurable; consider restricting in production.
-- Health endpoint for readiness checks; graceful startup/shutdown with cleanup.
-- Non-root user inside the container.
-
----
-
-## Monitoring and Observability Stack
-- Prometheus metrics exposed at `/metrics`:
-  - `http_requests_total{method,path,status}`
-  - `http_request_duration_seconds_bucket/sum/count` (histogram)
-  - `http_errors_total{method,path,status}`
-  - `predictions_total{endpoint}` and `prediction_duration_seconds` (histogram)
-  - `app_uptime_seconds`
-- Prometheus scrape config included: `monitoring/prometheus.yml` (targets `exoplanet-api:8000`).
-- Grafana provisioning:
-  - Datasource: `monitoring/grafana/datasources/datasource.yml` (Prometheus).
-  - Dashboards: provider at `monitoring/grafana/provisioning/dashboards/dashboards.yml`.
-  - Sample dashboard: `monitoring/grafana/dashboards/exoplanet_api_overview.json` (requests, errors, p95 latency, prediction latency, requests by path).
-
----
-
-## Code Quality and Tooling
-- Tests: `pytest`, `pytest-asyncio`, `pytest-cov`.
-- Linting/Formatting/Types: `flake8`, `black`, `mypy`.
-- Pre-commit hooks recommended.
-- CI-friendly commands can be added as Make targets.
-
----
-
-## Libraries and Rationale (selected)
-- FastAPI, Uvicorn, Pydantic V2: modern, fast, typed API development.
-- NumPy, SciPy, scikit-learn: scientific stack for preprocessing and features.
-- TensorFlow/Keras: CNN + BiLSTM hybrid model inference.
-- Dash by Plotly: interactive analytics UI with minimal JS.
-- prometheus-client: first-class runtime metrics.
-- Celery + Redis: background jobs, batch orchestration.
-- Nginx: TLS termination, reverse proxying.
-- Grafana + Prometheus: monitoring and dashboards.
-
----
-
-## Frontend (Web UI)
-The project includes a modern, accessible analytics interface built with Dash by Plotly. This interface allows users to explore exoplanet data interactively, with features such as:
-- Search and filtering options for missions, statuses, and other parameters.
-- Detailed visualizations of light curves with options to normalize, fold by period, and overlay models.
-- AI-based classification of exoplanet candidates.
-
-### Key Features
-- **Server**: The Dash application is powered by Flask, ensuring seamless integration with the FastAPI backend.
-- **Accessibility**: Designed with a high-contrast palette and WCAG 2.1 AA compliance.
-- **Deployment**: The UI is mounted at `/ui/` and can be accessed after starting the server.
-
-### How to Run the UI
-1. Ensure all dependencies are installed:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Start the application:
-   ```bash
-   python dashboard/app.py
-   ```
-3. Open your browser and navigate to:
-   ```
-   http://localhost:8050/ui/
-   ```
-
----
-
-## How to Run
-### Development (local Python)
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
-# Optional: create a .env with overrides (MODEL_FULL_PATH, LOG_LEVEL, etc.)
-python main.py
-```
-- UI: http://localhost:8000/ui/
-- API docs: http://localhost:8000/docs
 
-Tip: if you only want UI deps for a quick smoke test, install these first:
-```bash
-pip install fastapi uvicorn dash dash-bootstrap-components plotly httpx
+# ensure PYTHONPATH points to the `src` directory so the package-style imports work
+export PYTHONPATH="$(pwd)/src:$PYTHONPATH"
+
+# start the FastAPI app in development mode
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### Full Stack with Docker
+Frontend (development and production build)
+
+The frontend is a React app powered by Vite located at `src/frontend`.
+
+Development server
 ```bash
-# Optional for HTTPS via Nginx in dev
+cd src/frontend
+npm install    # or yarn
+npm run dev
+# the Vite dev server will show the port (commonly http://localhost:5173)
+```
+
+Production build
+```bash
+cd src/frontend
+npm run build
+# the static files will be emitted to src/frontend/dist/
+# the backend root route (GET /) serves frontend/dist/index.html when present
+```
+
+Run with Docker Compose (full stack)
+
+The repository ships a `docker-compose.yml` that assembles the API, Redis, Prometheus, Grafana, Nginx and worker services. It is the easiest way to launch the whole stack locally (including observability).
+
+```bash
+# optionally create dev TLS certs used by nginx
 make cert-dev
 
-# Build and start everything
+# build and start everything in detached mode
 docker compose up --build -d
 
-# Tail API logs
+# tail API logs
 docker compose logs -f exoplanet-api
 ```
-- HTTPS (Nginx): https://localhost/
-- API: http://localhost:8000/
-- Prometheus: http://localhost:9090/
-- Grafana: http://localhost:3000 (admin / admin123)
 
-Apple Silicon note (M1/M2): if TensorFlow wheels fail, build/run as amd64:
+If you run on Apple Silicon and encounter binary wheel issues (TensorFlow, etc.), consider building the containers for amd64:
+
 ```bash
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose build --no-cache
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up -d
 ```
 
+### Configuration and environment
+
+The service uses `src/backend/config.py` for application settings. A few noteworthy environment variables are:
+- MODEL_FULL_PATH — path to the Keras model file (default: `models/exoplanet_model.keras`).
+- LOG_LEVEL — logging level (e.g. INFO, DEBUG).
+- CACHE_TTL — time-to-live for caches (seconds).
+
+If the model file is missing or not loadable, the API will still serve health/metrics and the frontend, but prediction endpoints will fail and `/health` will return 503 until the model is available.
+
+### Logs and observability
+
+- API logs are written to `exoplanet_api.log` (in addition to stdout).
+- Prometheus metrics exposed at `/metrics` and a JSON summary at `/metrics/json`.
+- Grafana provisioning files are in `monitoring/grafana` and a sample dashboard is provided.
+
+### How the model is used
+
+The project expects a Keras model file (see `models/exoplanet_model.keras`). When present the backend loads a detector service that performs preprocessing and prediction. If you do not have a model and want to run the service for UI/metrics only, the API will run but prediction endpoints will return service-unavailable errors until a model is provided.
+
+### Developer notes and where to look in the code
+
+- Backend entrypoint and routes: `src/backend/main.py`.
+- Detector implementation and model-loading logic: `src/backend/exoplanet_detector_model.py` and `src/backend/services.py`.
+- Data models and validation: `src/backend/models.py`.
+- Cache implementation: `src/backend/cache.py`.
+- Frontend sources: `src/frontend/src/` and top-level React components in that folder.
+- Monitoring: `monitoring/prometheus.yml` and `monitoring/grafana`.
+- 
 ---
 
 ## Model File and Evaluation Guide
