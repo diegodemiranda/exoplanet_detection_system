@@ -17,27 +17,51 @@ The global CNN branch utilizes three convolutional layers with increasing filter
 
 ---
 
+## Table of Contents
+- [Quick overview](#quick-overview)
+- [What the service provides](#what-the-service-provides)
+- [Run locally (Python environment)](#run-locally-python-environment)
+- [Frontend (development and production build)](#frontend-development-and-production-build)
+- [Run with Docker Compose (full stack)](#run-with-docker-compose-full-stack)
+- [Configuration and environment](#configuration-and-environment)
+- [Logs and observability](#logs-and-observability)
+- [How the model is used](#how-the-model-is-used)
+- [Model File and Evaluation Guide](#model-file-and-evaluation-guide)
+- [Measuring Efficiency](#measuring-efficiency)
+- [Troubleshooting](#troubleshooting)
+- [Developer notes and where to look in the code](#developer-notes-and-where-to-look-in-the-code)
+- [Acknowledgements and License](#acknowledgements-and-license)
+
+---
 ## Quick overview
+
 - Backend: FastAPI application at `src/backend/main.py` (run with Uvicorn: `backend.main:app`).
 - Frontend: React + Vite in `src/frontend` (dev with `npm run dev`, build with `npm run build` → output `src/frontend/dist/`).
 - Model: expected Keras file `models/exoplanet_model.keras` (configurable via environment variables).
-- Containers & services: `docker-compose.yml` defines the full stack used in development (API, redis, prometheus, grafana, nginx, worker).
+- Containers & services: `docker-compose.yml` defines the full stack used in development (API, Redis, Prometheus, Grafana, Nginx, worker).
 - Logs: main API log file: `exoplanet_api.log`.
 
-### What this service actually provides
-- A FastAPI-based HTTP API that exposes (at least) the following routes:
-  - GET /            → serves the frontend `dist/index.html` when the frontend is built; otherwise returns a small HTML landing page with build instructions.
-  - GET /health      → health & readiness information (returns 503 when the model is not loaded).
-  - GET /metrics     → Prometheus exposition format for runtime metrics.
-  - GET /metrics/json → JSON-formatted metrics (requires the detector service to be available).
-  - POST /predict    → single prediction endpoint (expects validated candidate payload).
-  - POST /predict/batch → batch prediction endpoint.
-  - GET /examples    → example payloads for quick manual tests.
 
-Note: The backend implements structured exception handling and custom metrics (see `src/backend/main.py`). When the model is not present or not loaded, prediction endpoints will return an error (the `/health` endpoint also reflects model readiness).
+## What the service provides
 
-Run locally (Python environment)
-Using a virtualenv and Uvicorn directly (recommended if you don't use conda):
+A FastAPI-based HTTP API exposing (at least) the following routes:
+
+- `GET /` → serves the frontend `dist/index.html` when the frontend is built; otherwise returns a small HTML landing page with build instructions.
+- `GET /health` → health & readiness information (returns `503` when the model is not loaded).
+- `GET /metrics` → Prometheus exposition format for runtime metrics.
+- `GET /metrics/json` → JSON-formatted metrics (requires the detector service to be available).
+- `POST /predict` → single prediction endpoint (expects validated candidate payload).
+- `POST /predict/batch` → batch prediction endpoint.
+- `GET /examples` → example payloads for quick manual tests.
+
+> Note: The backend implements structured exception handling and custom metrics (see `src/backend/main.py`). When the model is missing or not loaded, prediction endpoints will return an error and `/health` will reflect model readiness.
+
+
+## Run locally (Python environment)
+
+Recommended: use a virtualenv. The repository also contains `start.sh` which attempts to use a Conda environment named `nasa_project`.
+
+Using a virtualenv and Uvicorn (recommended if you don't use conda):
 
 ```bash
 python -m venv .venv
@@ -45,18 +69,29 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# ensure PYTHONPATH points to the `src` directory so the package-style imports work
+# ensure PYTHONPATH points to the `src` directory so package-style imports work
 export PYTHONPATH="$(pwd)/src:$PYTHONPATH"
 
 # start the FastAPI app in development mode
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Frontend (development and production build)
+Using the included helper script (`start.sh`):
+
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+> `start.sh` sets `PYTHONPATH` to `src/` and tries to activate a Conda environment named `nasa_project` before running `uvicorn`.
+
+
+## Frontend (development and production build)
 
 The frontend is a React app powered by Vite located at `src/frontend`.
 
-Development server
+**Development server**
+
 ```bash
 cd src/frontend
 npm install    # or yarn
@@ -64,7 +99,8 @@ npm run dev
 # the Vite dev server will show the port (commonly http://localhost:5173)
 ```
 
-Production build
+**Production build**
+
 ```bash
 cd src/frontend
 npm run build
@@ -72,9 +108,10 @@ npm run build
 # the backend root route (GET /) serves frontend/dist/index.html when present
 ```
 
-Run with Docker Compose (full stack)
 
-The repository ships a `docker-compose.yml` that assembles the API, Redis, Prometheus, Grafana, Nginx and worker services. It is the easiest way to launch the whole stack locally (including observability).
+## Run with Docker Compose (full stack)
+
+The repository includes `docker-compose.yml` that assembles API, Redis, Prometheus, Grafana, Nginx and worker services. This is the easiest way to launch the full stack locally (including observability).
 
 ```bash
 # optionally create dev TLS certs used by nginx
@@ -94,26 +131,61 @@ DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose build --no-cache
 DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose up -d
 ```
 
-### Configuration and environment
 
-The service uses `src/backend/config.py` for application settings. A few noteworthy environment variables are:
-- MODEL_FULL_PATH — path to the Keras model file (default: `models/exoplanet_model.keras`).
-- LOG_LEVEL — logging level (e.g. INFO, DEBUG).
-- CACHE_TTL — time-to-live for caches (seconds).
+## Configuration and environment
 
-If the model file is missing or not loadable, the API will still serve health/metrics and the frontend, but prediction endpoints will fail and `/health` will return 503 until the model is available.
+The service uses `src/backend/config.py` for application settings. Noteworthy environment variables:
 
-### Logs and observability
+- `MODEL_FULL_PATH` — path to the Keras model file (default: `models/exoplanet_model.keras`).
+- `LOG_LEVEL` — logging level (e.g. `INFO`, `DEBUG`).
+- `CACHE_TTL` — time-to-live for caches (seconds).
+
+If the model file is missing or not loadable, the API will still serve health/metrics and the frontend, but prediction endpoints will fail and `/health` will return `503` until the model is available.
+
+
+## Logs and observability
 
 - API logs are written to `exoplanet_api.log` (in addition to stdout).
 - Prometheus metrics exposed at `/metrics` and a JSON summary at `/metrics/json`.
 - Grafana provisioning files are in `monitoring/grafana` and a sample dashboard is provided.
 
-### How the model is used
 
-The project expects a Keras model file (see `models/exoplanet_model.keras`). When present the backend loads a detector service that performs preprocessing and prediction. If you do not have a model and want to run the service for UI/metrics only, the API will run but prediction endpoints will return service-unavailable errors until a model is provided.
+## How the model is used
 
-### Developer notes and where to look in the code
+The project expects a Keras model file at `models/exoplanet_model.keras`. When present, the backend loads a detector service that performs preprocessing and prediction. If you do not have the model and want to run the service for UI/metrics only, the API will run but prediction endpoints will return service-unavailable errors until a model is provided.
+
+
+## Model File and Evaluation Guide
+
+- The API expects a full Keras model at `models/exoplanet_model.keras` (configurable via `MODEL_FULL_PATH`).
+- If the model file is not present, the API loads and serves the UI/metrics but returns `503 Service Unavailable` on `/health` and denies predictions with a clear error message.
+- When the model file is available:
+  1. Place the file under `./models/exoplanet_model.keras` (or set `MODEL_FULL_PATH`).
+  2. Restart the API; check `/model/info` (`loaded:true`).
+  3. `POST /predict` with a validated candidate payload.
+
+
+## Measuring Efficiency
+
+- Runtime latency: use `/metrics` histograms (`http_request_duration_seconds`, `prediction_duration_seconds`) to compute p50/p95/p99.
+- Throughput and error rates: counters `http_requests_total`, `http_errors_total`, `predictions_total`.
+- Use load tools (e.g., `hey`, `wrk`, `k6`) to benchmark predictions while Prometheus records time series.
+- Evaluate data quality: the service computes a `quality_score` (0..1) from signal statistics to aid interpretability.
+
+
+## Troubleshooting
+
+- `/health` returns 503: model file missing or path misconfigured → place `exoplanet_model.keras` under `./models` or set `MODEL_FULL_PATH`.
+- Dash UI not loading assets: ensure you are visiting `/ui/` and that the app is running on the same origin; set `EXO_API_BASE_URL` if using a separate domain.
+- Prometheus not scraping: ensure `exoplanet-api` is up, and `/metrics` returns data; check `monitoring/prometheus.yml` target.
+- Port 8000 busy: stop local processes (macOS):
+
+```bash
+lsof -nP -iTCP:8000 -sTCP:LISTEN
+```
+
+
+## Developer notes and where to look in the code
 
 - Backend entrypoint and routes: `src/backend/main.py`.
 - Detector implementation and model-loading logic: `src/backend/exoplanet_detector_model.py` and `src/backend/services.py`.
@@ -121,33 +193,12 @@ The project expects a Keras model file (see `models/exoplanet_model.keras`). Whe
 - Cache implementation: `src/backend/cache.py`.
 - Frontend sources: `src/frontend/src/` and top-level React components in that folder.
 - Monitoring: `monitoring/prometheus.yml` and `monitoring/grafana`.
----
 
-## Model File and Evaluation Guide
-- The API expects a full Keras model at `models/exoplanet_model.keras` (configurable via `MODEL_FULL_PATH`).
-- If the model file is not present, the API loads and serves the UI/metrics but returns `503 Service Unavailable` on `/health` and denies predictions with a clear error message.
-- When the model file is available:
-  1) Place the file under `./models/exoplanet_model.keras` (or set `MODEL_FULL_PATH`).
-  2) Restart the API; check `/model/info` (`loaded:true`).
-  3) POST `/predict` with a validated candidate payload.
-
-### Measuring Efficiency
-- Runtime latency: use `/metrics` histograms (`http_request_duration_seconds`, `prediction_duration_seconds`) to compute p50/p95/p99.
-- Throughput and error rates: counters `http_requests_total`, `http_errors_total`, `predictions_total`.
-- Use load tools (e.g., `hey`, `wrk`, `k6`) to benchmark predictions while Prometheus records time series.
-- Evaluate data quality: the service computes a `quality_score` (0..1) from signal statistics to aid interpretability.
-
----
-
-## Troubleshooting
-- `/health` returns 503: model file missing or path misconfigured → place `exoplanet_model.keras` under `./models` or set `MODEL_FULL_PATH`.
-- Dash UI not loading assets: ensure you are visiting `/ui/` and that the app is running on the same origin; set `EXO_API_BASE_URL` if using a separate domain.
-- Prometheus not scraping: ensure `exoplanet-api` is up, and `/metrics` returns data; check `monitoring/prometheus.yml` target.
-- Port 8000 busy: stop local processes (macOS: `lsof -nP -iTCP:8000 -sTCP:LISTEN`).
 
 ---
 
 ## Acknowledgements and License
+
 - NASA Kepler/K2/TESS communities and datasets
 - FastAPI, Pydantic, NumPy/SciPy, TensorFlow/Keras, Dash/Plotly
 - Prometheus and Grafana projects
