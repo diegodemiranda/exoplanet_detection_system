@@ -1,5 +1,5 @@
 # 🛰️ NASA Space Apps Challenge 2025: 
-## AI Exoplanet Detection System
+## Exo-Hunter - AI Exoplanet Detection System
 
 The development of a complete exoplanet detection system using artificial intelligence represents one of the most exciting frontiers of modern computational astronomy. This project implements a robust and scalable solution that combines advanced machine learning techniques with data from major **NASA** space missions, fully meeting the requirements of the proposed challenge.
 
